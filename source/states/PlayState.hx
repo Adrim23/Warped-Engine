@@ -14,6 +14,7 @@ import flixel.util.FlxStringUtil;
 import flixel.util.FlxSave;
 import flixel.input.keyboard.FlxKey;
 import flixel.animation.FlxAnimationController;
+import flixel.group.FlxSpriteGroup;
 import lime.utils.Assets;
 import openfl.utils.Assets as OpenFlAssets;
 import openfl.events.KeyboardEvent;
@@ -38,6 +39,7 @@ import objects.VideoSprite;
 
 import objects.Note.EventNote;
 import objects.*;
+import adrim.objects.*;
 import states.stages.*;
 import states.stages.objects.*;
 
@@ -49,7 +51,7 @@ import psychlua.HScript;
 #end
 
 #if HSCRIPT_ALLOWED
-import crowplexus.iris.Iris;
+import tea.SScript;
 #end
 
 /**
@@ -95,6 +97,7 @@ class PlayState extends MusicBeatState
 
 	#if HSCRIPT_ALLOWED
 	public var hscriptArray:Array<HScript> = [];
+	public var instancesExclude:Array<String> = [];
 	#end
 
 	public var BF_X:Float = 770;
@@ -162,7 +165,7 @@ class PlayState extends MusicBeatState
 	public var strumLineNotes:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var opponentStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var playerStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
-	public var grpNoteSplashes:FlxTypedGroup<NoteSplash> = new FlxTypedGroup<NoteSplash>();
+	public var grpNoteSplashes:FlxSpriteGroup = new FlxSpriteGroup();
 
 	public var camZooming:Bool = false;
 	public var camZoomingMult:Float = 1;
@@ -201,7 +204,7 @@ class PlayState extends MusicBeatState
 
 	public var iconP1:HealthIcon;
 	public var iconP2:HealthIcon;
-	public var camHUD:FlxCamera;
+	public var camHUD:HudCamera;
 	public var camGame:FlxCamera;
 	public var camOther:FlxCamera;
 	public var cameraSpeed:Float = 1;
@@ -210,7 +213,7 @@ class PlayState extends MusicBeatState
 	public var songHits:Int = 0;
 	public var songMisses:Int = 0;
 	public var scoreTxt:FlxText;
-	var timeTxt:FlxText;
+	public var timeTxt:FlxText;
 	var scoreTxtTween:FlxTween;
 
 	public static var campaignScore:Int = 0;
@@ -219,6 +222,7 @@ class PlayState extends MusicBeatState
 	public static var deathCounter:Int = 0;
 
 	public var defaultCamZoom:Float = 1.05;
+	public var defaultHUDZoom:Float = 1;
 
 	// how big to stretch the pixel art assets
 	public static var daPixelZoom:Float = 6;
@@ -237,6 +241,7 @@ class PlayState extends MusicBeatState
 	var storyDifficultyText:String = "";
 	var detailsText:String = "";
 	var detailsPausedText:String = "";
+	public var discordUser:DUser;
 	#end
 
 	//Achievement shit
@@ -262,6 +267,10 @@ class PlayState extends MusicBeatState
 	public var endCallback:Void->Void = null;
 
 	public static var nextReloadAll:Bool = false;
+
+	//Stage Shit
+	public var stage:FlxSpriteGroup = new FlxSpriteGroup();
+	public var foreground:FlxSpriteGroup = new FlxSpriteGroup();
 	override public function create()
 	{
 		//trace('Playback Rate: ' + playbackRate);
@@ -302,7 +311,8 @@ class PlayState extends MusicBeatState
 
 		// var gameCam:FlxCamera = FlxG.camera;
 		camGame = initPsychCamera();
-		camHUD = new FlxCamera();
+		camHUD = new HudCamera();
+		camHUD.downscroll = ClientPrefs.data.cnDownScroll;
 		camOther = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
 		camOther.bgColor.alpha = 0;
@@ -324,6 +334,8 @@ class PlayState extends MusicBeatState
 			detailsText = "Story Mode: " + WeekData.getCurrentWeek().weekName;
 		else
 			detailsText = "Freeplay";
+
+		discordUser = DiscordClient.userData;
 
 		// String for when the game is paused
 		detailsPausedText = "Paused - " + detailsText;
@@ -409,6 +421,8 @@ class PlayState extends MusicBeatState
 		boyfriend = new Character(0, 0, SONG.player1, true);
 		startCharacterPos(boyfriend);
 		boyfriendGroup.add(boyfriend);
+
+		add(stage);
 		
 		if(stageData.objects != null && stageData.objects.length > 0)
 		{
@@ -423,6 +437,8 @@ class PlayState extends MusicBeatState
 			add(dadGroup);
 			add(boyfriendGroup);
 		}
+
+		add(foreground);
 		
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		// "SCRIPTS FOLDER" SCRIPTS
@@ -797,7 +813,7 @@ class PlayState extends MusicBeatState
 
 		if(doPush)
 		{
-			if(Iris.instances.exists(scriptFile))
+			if(SScript.global.exists(scriptFile))
 				doPush = false;
 
 			if(doPush) initHScript(scriptFile);
@@ -1735,7 +1751,7 @@ class PlayState extends MusicBeatState
 		if (camZooming)
 		{
 			FlxG.camera.zoom = FlxMath.lerp(defaultCamZoom, FlxG.camera.zoom, Math.exp(-elapsed * 3.125 * camZoomingDecay * playbackRate));
-			camHUD.zoom = FlxMath.lerp(1, camHUD.zoom, Math.exp(-elapsed * 3.125 * camZoomingDecay * playbackRate));
+			camHUD.zoom = FlxMath.lerp(defaultHUDZoom, camHUD.zoom, Math.exp(-elapsed * 3.125 * camZoomingDecay * playbackRate));
 		}
 
 		FlxG.watch.addQuick("secShit", curSection);
@@ -2253,12 +2269,10 @@ class PlayState extends MusicBeatState
 				}
 				catch(e:Dynamic)
 				{
-					var len:Int = e.message.indexOf('\n') + 1;
-					if(len <= 0) len = e.message.length;
 					#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
-					addTextToDebug('ERROR ("Set Property" Event) - ' + e.message.substr(0, len), FlxColor.RED);
+					addTextToDebug('ERROR ("Set Property" Event) - ' + e.message, FlxColor.RED);
 					#else
-					FlxG.log.warn('ERROR ("Set Property" Event) - ' + e.message.substr(0, len));
+					FlxG.log.warn('ERROR ("Set Property" Event) - ' + e.message);
 					#end
 				}
 
@@ -2573,6 +2587,7 @@ class PlayState extends MusicBeatState
 		rating.x += ClientPrefs.data.comboOffset[0];
 		rating.y -= ClientPrefs.data.comboOffset[1];
 		rating.antialiasing = antialias;
+		rating.alt = false;
 
 		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiFolder + 'combo' + uiPostfix));
 		comboSpr.screenCenter();
@@ -2585,6 +2600,7 @@ class PlayState extends MusicBeatState
 		comboSpr.antialiasing = antialias;
 		comboSpr.y += 60;
 		comboSpr.velocity.x += FlxG.random.int(1, 10) * playbackRate;
+		comboSpr.alt = false;
 		comboGroup.add(rating);
 
 		if (!PlayState.isPixelStage)
@@ -2623,6 +2639,7 @@ class PlayState extends MusicBeatState
 			numScore.velocity.x = FlxG.random.float(-5, 5) * playbackRate;
 			numScore.visible = !ClientPrefs.data.hideHud;
 			numScore.antialiasing = antialias;
+			numScore.alt = false;
 
 			//if (combo >= 10 || combo == 0)
 			if(showComboNum)
@@ -3107,6 +3124,7 @@ class PlayState extends MusicBeatState
 		var splash:NoteSplash = new NoteSplash();
 		splash.babyArrow = strum;
 		splash.spawnSplashNote(note);
+		splash.camOffsetY = 100;
 		grpNoteSplashes.add(splash);
 	}
 
@@ -3120,7 +3138,7 @@ class PlayState extends MusicBeatState
 		#if LUA_ALLOWED
 		for (lua in luaArray)
 		{
-			lua.call('onDestroy', []);
+			lua.call('onDestroy', null);
 			lua.stop();
 		}
 		luaArray = null;
@@ -3131,7 +3149,7 @@ class PlayState extends MusicBeatState
 		for (script in hscriptArray)
 			if(script != null)
 			{
-				script.executeFunction('onDestroy');
+				script.executeFunction('onDestroy', []);
 				script.destroy();
 			}
 
@@ -3280,7 +3298,7 @@ class PlayState extends MusicBeatState
 
 		if(FileSystem.exists(scriptToLoad))
 		{
-			if (Iris.instances.exists(scriptToLoad)) return false;
+			if (SScript.global.exists(scriptToLoad)) return false;
 
 			initHScript(scriptToLoad);
 			return true;
@@ -3294,14 +3312,14 @@ class PlayState extends MusicBeatState
 		try
 		{
 			newScript = new HScript(null, file);
-			newScript.executeFunction('onCreate');
+			newScript.executeFunction('onCreate', null);
 			trace('initialized hscript interp successfully: $file');
 			hscriptArray.push(newScript);
 		}
 		catch(e:Dynamic)
 		{
 			addTextToDebug('ERROR ON LOADING ($file) - $e', FlxColor.RED);
-			var newScript:HScript = cast (Iris.instances.get(file), HScript);
+			var newScript:HScript = cast (SScript.global.get(file), HScript);
 			if(newScript != null)
 				newScript.destroy();
 		}

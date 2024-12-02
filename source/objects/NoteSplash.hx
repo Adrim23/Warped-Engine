@@ -112,7 +112,7 @@ class NoteSplash extends FlxSprite
 			return;
 
 		if (babyArrow != null)
-			setPosition(babyArrow.x, babyArrow.y); // To prevent it from being misplaced for one game tick
+			setPosition(babyArrow.x, (ClientPrefs.data.cnDownScroll) ? babyArrow.y+100 : babyArrow.y); // To prevent it from being misplaced for one game tick
 
 		if (noteData == null)
 			noteData = note != null ? note.noteData : 0;

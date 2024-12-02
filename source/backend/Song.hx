@@ -62,7 +62,7 @@ class Song
 	public var player1:String = 'bf';
 	public var player2:String = 'dad';
 	public var gfVersion:String = 'gf';
-	public var format:String = 'psych_v1';
+	public var format:String = 'psych_v073';
 
 	public static function convert(songJson:Dynamic) // Convert old charts to psych_v1 format
 	{

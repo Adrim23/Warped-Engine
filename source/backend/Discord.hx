@@ -1,23 +1,22 @@
 package backend;
-
 #if DISCORD_ALLOWED
 import Sys.sleep;
-import sys.thread.Thread;
-import lime.app.Application;
-
 import hxdiscord_rpc.Discord;
 import hxdiscord_rpc.Types;
-
-import flixel.util.FlxStringUtil;
+import sys.thread.Thread;
+import Sys;
+import lime.app.Application;
+import flixel.util.typeLimit.OneOfTwo;
+import openfl.display.BitmapData;
+import adrim.backend.HttpUtil;
 
 class DiscordClient
 {
 	public static var isInitialized:Bool = false;
-	private inline static final _defaultID:String = "863222024192262205";
+	private static final _defaultID:String = "1304722013675454554";
 	public static var clientID(default, set):String = _defaultID;
-	private static var presence:DiscordPresence = new DiscordPresence();
-	// hides this field from scripts and reflection in general
-	@:unreflective private static var __thread:Thread;
+	private static var presence:DiscordRichPresence = DiscordRichPresence.create();
+	public static var userData:DUser;
 
 	public static function check()
 	{
@@ -35,34 +34,24 @@ class DiscordClient
 		});
 	}
 
-	public dynamic static function shutdown()
-	{
-		isInitialized = false;
+	public dynamic static function shutdown() {
 		Discord.Shutdown();
+		isInitialized = false;
 	}
 	
-	private static function onReady(request:cpp.RawConstPointer<DiscordUser>):Void
-	{
-		final user = cast (request[0].username, String);
-		final discriminator = cast (request[0].discriminator, String);
+	private static function onReady(request:cpp.RawConstPointer<DiscordUser>):Void {
+		userData = DUser.initRaw(request);
 
-		var message = '(Discord) Connected to User ';
-		if (discriminator != '0') //Old discriminators
-			message += '($user#$discriminator)';
-		else //New Discord IDs/Discriminator system
-			message += '($user)';
+		 trace("Connected to User " + userData.globalName + " ("+userData.handle+")");
 
-		trace(message);
 		changePresence();
 	}
 
-	private static function onError(errorCode:Int, message:cpp.ConstCharStar):Void
-	{
+	private static function onError(errorCode:Int, message:cpp.ConstCharStar):Void {
 		trace('Discord: Error ($errorCode: ${cast(message, String)})');
 	}
 
-	private static function onDisconnected(errorCode:Int, message:cpp.ConstCharStar):Void
-	{
+	private static function onDisconnected(errorCode:Int, message:cpp.ConstCharStar):Void {
 		trace('Discord: Disconnected ($errorCode: ${cast(message, String)})');
 	}
 
@@ -76,56 +65,47 @@ class DiscordClient
 
 		if(!isInitialized) trace("Discord Client initialized");
 
-		if (__thread == null)
+		sys.thread.Thread.create(() ->
 		{
-			__thread = Thread.create(() ->
+			var localID:String = clientID;
+			while (localID == clientID)
 			{
-				while (true)
-				{
-					if (isInitialized)
-					{
-						#if DISCORD_DISABLE_IO_THREAD
-						Discord.UpdateConnection();
-						#end
-						Discord.RunCallbacks();
-					}
+				#if DISCORD_DISABLE_IO_THREAD
+				Discord.UpdateConnection();
+				#end
+				Discord.RunCallbacks();
 
-					// Wait 1 second until the next loop...
-					Sys.sleep(1.0);
-				}
-			});
-		}
+				// Wait 2 seconds until the next loop...
+				Sys.sleep(2);
+			}
+		});
 		isInitialized = true;
 	}
 
-	public static function changePresence(details:String = 'In the Menus', ?state:String, ?smallImageKey:String, ?hasStartTimestamp:Bool, ?endTimestamp:Float, largeImageKey:String = 'icon')
+	public static function changePresence(?details:String = 'In the Menus', ?state:Null<String>, ?smallImageKey : String, ?hasStartTimestamp : Bool, ?endTimestamp: Float)
 	{
 		var startTimestamp:Float = 0;
 		if (hasStartTimestamp) startTimestamp = Date.now().getTime();
 		if (endTimestamp > 0) endTimestamp = startTimestamp + endTimestamp;
 
-		presence.state = state;
 		presence.details = details;
-		presence.smallImageKey = smallImageKey;
-		presence.largeImageKey = largeImageKey;
+		presence.state = state;
+		presence.largeImageKey = 'icon';
 		presence.largeImageText = "Engine Version: " + states.MainMenuState.psychEngineVersion;
+		presence.smallImageKey = smallImageKey;
 		// Obtained times are in milliseconds so they are divided so Discord can use it
 		presence.startTimestamp = Std.int(startTimestamp / 1000);
 		presence.endTimestamp = Std.int(endTimestamp / 1000);
 		updatePresence();
 
-		//trace('Discord RPC Updated. Arguments: $details, $state, $smallImageKey, $hasStartTimestamp, $endTimestamp, $largeImageKey');
+		//trace('Discord RPC Updated. Arguments: $details, $state, $smallImageKey, $hasStartTimestamp, $endTimestamp');
 	}
 
 	public static function updatePresence()
-	{
-		Discord.UpdatePresence(cpp.RawConstPointer.addressOf(presence.__presence));
-	}
+		Discord.UpdatePresence(cpp.RawConstPointer.addressOf(presence));
 	
-	inline public static function resetClientID()
-	{
+	public static function resetClientID()
 		clientID = _defaultID;
-	}
 
 	private static function set_clientID(newID:String)
 	{
@@ -154,10 +134,12 @@ class DiscordClient
 	#end
 
 	#if LUA_ALLOWED
-	public static function addLuaCallbacks(lua:State)
-	{
-		Lua_helper.add_callback(lua, "changeDiscordPresence", changePresence);
-		Lua_helper.add_callback(lua, "changeDiscordClientID", function(?newID:String) {
+	public static function addLuaCallbacks(lua:State) {
+		Lua_helper.add_callback(lua, "changeDiscordPresence", function(details:String, state:Null<String>, ?smallImageKey:String, ?hasStartTimestamp:Bool, ?endTimestamp:Float) {
+			changePresence(details, state, smallImageKey, hasStartTimestamp, endTimestamp);
+		});
+
+		Lua_helper.add_callback(lua, "changeDiscordClientID", function(?newID:String = null) {
 			if(newID == null) newID = _defaultID;
 			clientID = newID;
 		});
@@ -165,105 +147,123 @@ class DiscordClient
 	#end
 }
 
-@:allow(backend.DiscordClient)
-private final class DiscordPresence
+class DUser
 {
-	public var state(get, set):String;
-	public var details(get, set):String;
-	public var smallImageKey(get, set):String;
-	public var largeImageKey(get, set):String;
-	public var largeImageText(get, set):String;
-	public var startTimestamp(get, set):Int;
-	public var endTimestamp(get, set):Int;
+	/**
+	 * The username + discriminator if they have it
+	**/
+	public var handle:String;
 
-	@:noCompletion private var __presence:DiscordRichPresence;
+	/**
+	 * The user id, aka 860561967383445535
+	**/
+	public var userId:String;
 
-	function new()
+	/**
+	 * The user's username
+	**/
+	public var username:String;
+
+	/**
+	 * The #number from before discord changed to usernames only, if the user has changed to a username them its just a 0
+	**/
+	public var discriminator:Int;
+
+	/**
+	 * The user's avatar filename
+	**/
+	public var avatar:String;
+
+	/**
+	 * The user's display name
+	**/
+	public var globalName:String;
+
+	/**
+	 * If the user is a bot or not
+	**/
+	public var bot:Bool;
+
+	/**
+	 * Idk check discord docs
+	**/
+	public var flags:Int;
+
+	/**
+	 * If the user has nitro
+	**/
+	public var premiumType:NitroType;
+
+	private function new()
 	{
-		__presence = DiscordRichPresence.create();
+	}
+	public static function initRaw(req:cpp.RawConstPointer<DiscordUser>)
+	{
+		return init(cpp.ConstPointer.fromRaw(req).ptr);
 	}
 
-	public function toString():String
+	public static function init(userData:cpp.Star<DiscordUser>)
 	{
-		return FlxStringUtil.getDebugString([
-			LabelValuePair.weak("state", state),
-			LabelValuePair.weak("details", details),
-			LabelValuePair.weak("smallImageKey", smallImageKey),
-			LabelValuePair.weak("largeImageKey", largeImageKey),
-			LabelValuePair.weak("largeImageText", largeImageText),
-			LabelValuePair.weak("startTimestamp", startTimestamp),
-			LabelValuePair.weak("endTimestamp", endTimestamp)
-		]);
+		var d = new DUser();
+		d.userId = userData.userId;
+		d.username = userData.username;
+		d.discriminator = Std.parseInt(userData.discriminator);
+		d.avatar = userData.avatar;
+		d.globalName = userData.globalName;
+		d.bot = userData.bot;
+		d.flags = userData.flags;
+		d.premiumType = userData.premiumType;
+
+		if (d.discriminator != 0)
+			d.handle = '${d.username}#${d.discriminator}';
+		else
+			d.handle = '${d.username}';
+		return d;
 	}
 
-	@:noCompletion inline function get_state():String
-	{
-		return __presence.state;
-	}
+	/**
+	 * Calling this function gets the BitmapData of the user
+	**/
+	public function getAvatar(size:Int = 256):BitmapData
+		return BitmapData.fromBytes(HttpUtil.requestBytes('https://cdn.discordapp.com/avatars/$userId/$avatar.png?size=$size'));
+}
 
-	@:noCompletion inline function set_state(value:String):String
-	{
-		return __presence.state = value;
-	}
+enum abstract NitroType(Int) to Int from Int
+{
+	var NONE = 0;
+	var NITRO_CLASSIC = 1;
+	var NITRO = 2;
+	var NITRO_BASIC = 3;
+}
 
-	@:noCompletion inline function get_details():String
-	{
-		return __presence.details;
-	}
+typedef DPresence =
+{
+	var ?state:String; /* max 128 bytes */
+	var ?details:String; /* max 128 bytes */
+	var ?startTimestamp:OneOfTwo<Int, haxe.Int64>;
+	var ?endTimestamp:OneOfTwo<Int, haxe.Int64>;
+	var ?largeImageKey:String; /* max 32 bytes */
+	var ?largeImageText:String; /* max 128 bytes */
+	var ?smallImageKey:String; /* max 32 bytes */
+	var ?smallImageText:String; /* max 128 bytes */
+	var ?partyId:String; /* max 128 bytes */
+	var ?partySize:Int;
+	var ?partyMax:Int;
+	var ?partyPrivacy:Int;
+	var ?matchSecret:String; /* max 128 bytes */
+	var ?joinSecret:String; /* max 128 bytes */
+	var ?spectateSecret:String; /* max 128 bytes */
+	var ?instance:OneOfTwo<Int, cpp.Int8>;
+	var ?button1Label:String; /* max 32 bytes */
+	var ?button1Url:String; /* max 512 bytes */
+	var ?button2Label:String; /* max 32 bytes */
+	var ?button2Url:String; /* max 512 bytes */
+}
 
-	@:noCompletion inline function set_details(value:String):String
-	{
-		return __presence.details = value;
-	}
-
-	@:noCompletion inline function get_smallImageKey():String
-	{
-		return __presence.smallImageKey;
-	}
-
-	@:noCompletion inline function set_smallImageKey(value:String):String
-	{
-		return __presence.smallImageKey = value;
-	}
-
-	@:noCompletion inline function get_largeImageKey():String
-	{
-		return __presence.largeImageKey;
-	}
-	
-	@:noCompletion inline function set_largeImageKey(value:String):String
-	{
-		return __presence.largeImageKey = value;
-	}
-
-	@:noCompletion inline function get_largeImageText():String
-	{
-		return __presence.largeImageText;
-	}
-
-	@:noCompletion inline function set_largeImageText(value:String):String
-	{
-		return __presence.largeImageText = value;
-	}
-
-	@:noCompletion inline function get_startTimestamp():Int
-	{
-		return __presence.startTimestamp;
-	}
-
-	@:noCompletion inline function set_startTimestamp(value:Int):Int
-	{
-		return __presence.startTimestamp = value;
-	}
-
-	@:noCompletion inline function get_endTimestamp():Int
-	{
-		return __presence.endTimestamp;
-	}
-
-	@:noCompletion inline function set_endTimestamp(value:Int):Int
-	{
-		return __presence.endTimestamp = value;
-	}
+typedef DEvents =
+{
+	var ?ready:DUser->Void;
+	var ?disconnected:(errorCode:Int, message:String) -> Void;
+	var ?errored:(errorCode:Int, message:String) -> Void;
 }
 #end
