@@ -5,6 +5,12 @@ import haxe.Json;
 import backend.Song;
 import psychlua.ModchartSprite;
 
+import haxe.Exception;
+import haxe.io.Path;
+import haxe.xml.Access;
+
+import adrim.backend.XMLHelper;
+
 typedef StageFile = {
 	var directory:String;
 	var defaultZoom:Float;
@@ -24,6 +30,8 @@ typedef StageFile = {
 	@:optional var preload:Dynamic;
 	@:optional var objects:Array<Dynamic>;
 	@:optional var _editorMeta:Dynamic;
+
+	@:optional var folder:String; // incase it's a xml stage and wants to load stuff in
 }
 
 enum abstract LoadFilters(Int) from Int from UInt to Int to UInt
@@ -76,6 +84,9 @@ class StageData {
 	}
 
 	public static function getStageFile(stage:String):StageFile {
+		spriteNum = 0;
+		stageXML = null;
+		stageSprites.clear();
 		try
 		{
 			var path:String = Paths.getPath('stages/' + stage + '.json', TEXT, null, true);
@@ -86,7 +97,12 @@ class StageData {
 			if(Assets.exists(path))
 				return cast tjson.TJSON.parse(Assets.getText(path));
 			#end
+
+			trace('getting xml...');
+			return loadStageXML(stage);
 		}
+		catch(e:Dynamic)
+			trace('failed getting stage... ${e.message}');
 		return dummy();
 	}
 
@@ -224,4 +240,243 @@ class StageData {
 		return ((ClientPrefs.data.lowQuality && (filters & LOW_QUALITY) == LOW_QUALITY) ||
 			(!ClientPrefs.data.lowQuality && (filters & HIGH_QUALITY) == HIGH_QUALITY));
 	}
+
+	public static var stageXML:Access;
+	public static var stageSprites:Map<String, FlxSprite> = [];
+	static var spriteNum:Int = 0;
+	static function loadStageXML(stageName:String)
+	{
+		var stageToLoad:StageFile = StageData.dummy();
+		var stagePath:String = Paths.modFolders('stages/' + stageName + '.xml');
+        if (FileSystem.exists(stagePath))
+		{
+			trace('found stage xml at $stagePath');
+			try stageXML = new Access(Xml.parse(File.getContent(stagePath)).firstElement())
+			catch(e) trace('Couldn\'t load stage "$stageName": ${e.message}');
+		}
+        else
+		{
+			trace('failed to find $stageName, returning default');
+			return stageToLoad;
+		}
+
+		if (stageXML != null) {
+			var parsed:Dynamic;
+			if(stageXML.has.zoom && (parsed = Std.parseFloat(stageXML.att.zoom)) != null) stageToLoad.defaultZoom = parsed;
+			if (stageXML.has.folder) {
+				stageToLoad.folder = stageXML.att.folder;
+				if (!stageToLoad.folder.endsWith("/")) stageToLoad.folder += "/";
+			}
+			else stageToLoad.folder = "";
+
+			for(node in stageXML.elements) {
+				var sprite:Dynamic = switch(node.name) {
+					case "boyfriend" | "bf" | "player":
+						stageToLoad = addCharPos("boyfriend", node, stageToLoad, {
+							x: 770,
+							y: 100,
+							scroll: new FlxPoint(1,1),
+							flip: true,
+							flipX: true,
+							camOffset: [0,0],
+							alpha: 1,
+							scale: new FlxPoint(1,1)
+						});
+					case "girlfriend" | "gf":
+						stageToLoad = addCharPos("girlfriend", node, stageToLoad, {
+							x: 400,
+							y: 130,
+							scroll: new FlxPoint(0.95),
+							flip: false,
+							flipX: false,
+							camOffset: [0,0],
+							alpha: 1,
+							scale: new FlxPoint(1,1)
+						});
+					case "dad" | "opponent":
+						stageToLoad = addCharPos("dad", node, stageToLoad, {
+							x: 100,
+							y: 100,
+							scroll: new FlxPoint(1,1),
+							flip: false,
+							flipX: false,
+							camOffset: [0,0],
+							alpha: 1,
+							scale: new FlxPoint(1,1)
+						});
+					case "character" | "char":
+						if (!node.has.name) continue;
+						trace('i have a limit goddamnit');
+						null;
+					case "use-extension" | "extension" | "ext":
+						trace('pysch doesn\'t use this');
+						null;
+					default: null;
+				}
+			}
+		}
+		return stageToLoad;
+	}
+
+	public static function loadXMLSprites(?stageFile:StageFile)
+	{
+		if (stageFile == null) 
+		{
+			trace('loadXMLSprites: stageFile null, using a dummy stageFile');
+			stageFile = dummy();
+		}
+		var xmlSprites:Array<FlxSprite> = [];
+		for(node in stageXML.elements) {
+			var sprite:Dynamic = switch(node.name) {
+				case "sprite" | "spr" | "sparrow":
+					if (!node.has.sprite || !node.has.name) continue;
+					var nameSpr:String = '';
+					if (node.has.name) nameSpr = node.att.name;
+
+					var spr = XMLHelper.createSpriteFromXML(node, stageFile.folder, LOOP);
+					if (nameSpr == '') {
+						spriteNum++;
+						nameSpr = 'sprite$spriteNum';
+					}
+
+					stageSprites.set(nameSpr, spr);
+					PlayState.instance.stage.add(spr);
+					xmlSprites.push(spr);
+					spr;
+				case "box" | "solid":
+					if (!node.has.name || !node.has.width || !node.has.height) continue;
+					var nameSpr:String = '';
+					if (node.has.name) nameSpr = node.att.name;
+
+					var spr = new FlxSprite(
+						(node.has.x) ? Std.parseFloat(node.att.x) : 0,
+						(node.has.y) ? Std.parseFloat(node.att.y) : 0
+					);
+
+					spr.makeGraphic(
+						Std.parseInt(node.att.width),
+						Std.parseInt(node.att.height),
+						(node.has.color) ? CoolUtil.getColorFromDynamic(node.att.color) : -1
+					);
+
+					if (nameSpr == '') {
+						spriteNum++;
+						nameSpr = 'sprite$spriteNum';
+					}
+
+					stageSprites.set(nameSpr, spr);
+					PlayState.instance.stage.add(spr);
+					xmlSprites.push(spr);
+					spr;
+				default: null;
+			}
+
+			for (sprite in xmlSprites) {
+				if (sprite != null) {
+					for(e in node.nodes.property)
+						XMLHelper.applyXMLProperty(sprite, e);
+				}
+			}
+
+			switch(node.name)
+			{
+				case "boyfriend" | "bf" | "player":
+				PlayState.instance.boyfriendGroup.add(PlayState.instance.boyfriend);	
+				case "girlfriend" | "gf":
+				PlayState.instance.gfGroup.add(PlayState.instance.gf);	
+				case "dad" | "opponent":
+				PlayState.instance.dadGroup.add(PlayState.instance.dad);	
+				default:
+				//Nothing lmao	
+			}
+		}
+	}
+
+	public static function getSprite(name:String)
+		return stageSprites.get(name);
+
+	static function addCharPos(charType:String, node:Access, stageFile:StageFile, info:StageCharPosInfo) {
+		var xmlInfo:StageCharPosInfo = {
+			x: 0,
+			y: 0,
+			flip: false,
+			scroll: new FlxPoint(0,0),
+			camOffset: [0,0],
+			flipX: false,
+			alpha: 1,
+			scale: new FlxPoint(0,0)
+		}
+		if (info != null) {
+			switch(charType)
+			{
+				case 'boyfriend':
+					stageFile.boyfriend = [info.x, info.y];
+					stageFile.camera_boyfriend = [info.camOffset[0], info.camOffset[1]];
+				case 'girlfriend':
+					stageFile.girlfriend = [info.x, info.y];
+					stageFile.camera_girlfriend = [info.camOffset[0], info.camOffset[1]];
+				case 'dad':
+					stageFile.opponent = [info.x, info.y];
+					stageFile.camera_opponent = [info.camOffset[0], info.camOffset[1]];
+				default:
+					stageFile.boyfriend = [info.x, info.y];
+					stageFile.camera_boyfriend = [info.camOffset[0], info.camOffset[1]];
+			}
+		}
+
+		if (node != null) {
+			xmlInfo.x = (CoolUtil.isNaN(Std.parseFloat(node.x.get("x")))) ? info.x : Std.parseFloat(node.x.get("x"));
+			xmlInfo.y = (CoolUtil.isNaN(Std.parseFloat(node.x.get("y")))) ? info.y : Std.parseFloat(node.x.get("y"));
+			xmlInfo.camOffset = [Std.parseInt(node.x.get("camxoffset")), Std.parseInt(node.x.get("camyoffset"))];
+			xmlInfo.alpha = Std.parseFloat(node.x.get("alpha"));
+			xmlInfo.flipX = (node.has.flip || node.has.flipX) ? (node.x.get("flip") == "true" || node.x.get("flipX") == "true") : false;
+
+			var scale = Std.parseFloat(node.x.get("scale"));
+			xmlInfo.scale.set(scale, scale);
+
+			if (node.has.scroll) {
+				var scroll:Null<Float> = Std.parseFloat(node.att.scroll);
+				if (scroll != null) xmlInfo.scroll.set(scroll, scroll);
+			} else {
+				if (node.has.scrollx) {
+					var scroll:Null<Float> = Std.parseFloat(node.att.scrollx);
+					if (scroll != null) xmlInfo.scroll.x = scroll;
+				}
+				if (node.has.scrolly) {
+					var scroll:Null<Float> = Std.parseFloat(node.att.scrolly);
+					if (scroll != null) xmlInfo.scroll.y = scroll;
+				}
+			}
+
+			switch(charType)
+			{
+				case 'boyfriend':
+					stageFile.boyfriend = [xmlInfo.x, xmlInfo.y];
+					stageFile.camera_boyfriend = [xmlInfo.camOffset[0], xmlInfo.camOffset[1]];
+				case 'girlfriend':
+					stageFile.girlfriend = [xmlInfo.x, xmlInfo.y];
+					stageFile.camera_girlfriend = [xmlInfo.camOffset[0], xmlInfo.camOffset[1]];
+				case 'dad':
+					stageFile.opponent = [xmlInfo.x, xmlInfo.y];
+					stageFile.camera_opponent = [xmlInfo.camOffset[0], xmlInfo.camOffset[1]];
+				default:
+					stageFile.boyfriend = [xmlInfo.x, xmlInfo.y];
+					stageFile.camera_boyfriend = [xmlInfo.camOffset[0], xmlInfo.camOffset[1]];
+			}
+		}
+
+		return stageFile;
+	}
+}
+
+//CODENAME STUFF (at the end of pysch's bc this shit is really big)
+typedef StageCharPosInfo = {
+	var x:Float;
+	var y:Float;
+	var flip:Bool;
+	var scroll:FlxPoint;
+	var camOffset:Array<Int>;
+	var flipX:Bool;
+	var alpha:Float;
+	var scale:FlxPoint;
 }

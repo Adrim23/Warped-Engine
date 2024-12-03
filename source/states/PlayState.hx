@@ -411,16 +411,17 @@ class PlayState extends MusicBeatState
 			gf = new Character(0, 0, SONG.gfVersion);
 			startCharacterPos(gf);
 			gfGroup.scrollFactor.set(0.95, 0.95);
-			gfGroup.add(gf);
+			if(StageData.stageXML == null) gfGroup.add(gf);
 		}
 
 		dad = new Character(0, 0, SONG.player2);
 		startCharacterPos(dad, true);
-		dadGroup.add(dad);
+		if(StageData.stageXML == null) dadGroup.add(dad);
 
 		boyfriend = new Character(0, 0, SONG.player1, true);
 		startCharacterPos(boyfriend);
-		boyfriendGroup.add(boyfriend);
+		if(StageData.stageXML == null) boyfriendGroup.add(boyfriend);
+		if(StageData.stageXML != null) StageData.loadXMLSprites(stageData);
 
 		add(stage);
 		
@@ -715,8 +716,11 @@ class PlayState extends MusicBeatState
 	#end
 
 	public function reloadHealthBarColors() {
-		healthBar.setColors(FlxColor.fromRGB(dad.healthColorArray[0], dad.healthColorArray[1], dad.healthColorArray[2]),
-			FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]));
+		var dadCol = FlxColor.fromRGB(dad.healthColorArray[0], dad.healthColorArray[1], dad.healthColorArray[2]);
+		var bfCol = FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]);
+		if (dad.xml != null) dadCol = FlxColor.fromString(dad.stringCol);
+		if (boyfriend.xml != null) bfCol = FlxColor.fromString(boyfriend.stringCol);
+		healthBar.setColors(dadCol,bfCol);
 	}
 
 	public function addCharacterToList(newCharacter:String, type:Int) {
@@ -3149,7 +3153,7 @@ class PlayState extends MusicBeatState
 		for (script in hscriptArray)
 			if(script != null)
 			{
-				script.executeFunction('onDestroy', []);
+				script.executeFunction('onDestroy', null);
 				script.destroy();
 			}
 

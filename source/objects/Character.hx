@@ -8,9 +8,13 @@ import flixel.util.FlxDestroyUtil;
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
 import haxe.Json;
+import haxe.Exception;
+import haxe.io.Path;
+import haxe.xml.Access;
 
 import backend.Song;
 import states.stages.objects.TankmenBG;
+import adrim.backend.XMLHelper;
 
 typedef CharacterFile = {
 	var animations:Array<AnimArray>;
@@ -80,6 +84,9 @@ class Character extends FlxSprite
 	public var noAntialiasing:Bool = false;
 	public var originalFlipX:Bool = false;
 	public var editorIsPlayer:Null<Bool> = null;
+	
+	public var xml:Access; //Codename Shit
+	public var stringCol:String; //Codename compat property
 
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
 	{
@@ -109,6 +116,7 @@ class Character extends FlxSprite
 		curCharacter = character;
 		var characterPath:String = 'characters/$character.json';
 
+		var isXml:Bool = false;
 		var path:String = Paths.getPath(characterPath, TEXT);
 		#if MODS_ALLOWED
 		if (!FileSystem.exists(path))
@@ -116,19 +124,28 @@ class Character extends FlxSprite
 		if (!Assets.exists(path))
 		#end
 		{
-			path = Paths.getSharedPath('characters/' + DEFAULT_CHARACTER + '.json'); //If a character couldn't be found, change him to BF just to prevent a crash
-			missingCharacter = true;
-			missingText = new FlxText(0, 0, 300, 'ERROR:\n$character.json', 16);
-			missingText.alignment = CENTER;
+		isXml = true;
+		characterPath = 'characters/$curCharacter.xml';
+		path = Paths.getPath(characterPath, TEXT, null, true);
+		if (!FileSystem.exists(path))
+			{
+				path = Paths.getSharedPath('characters/' + DEFAULT_CHARACTER + '.json'); //If a character couldn't be found, change him to BF just to prevent a crash
+				missingCharacter = true;
+				missingText = new FlxText(0, 0, 300, 'ERROR:\n$character.json', 16);
+				missingText.alignment = CENTER;
+			}
 		}
 
 		try
 		{
+			if (!isXml)
 			#if MODS_ALLOWED
 			loadCharacterFile(Json.parse(File.getContent(path)));
 			#else
 			loadCharacterFile(Json.parse(Assets.getText(path)));
 			#end
+			else
+			loadCharacterFile(loadXMLCharacter(getCharacterXML(character)));
 		}
 		catch(e:Dynamic)
 		{
@@ -235,6 +252,96 @@ class Character extends FlxSprite
 		#end
 		//trace('Loaded file to character ' + curCharacter);
 	}
+
+	public static function getCharacterXML(character:String){
+		var characterPath:String = 'characters/' + character + '.xml';
+
+		#if MODS_ALLOWED
+		var path:String = Paths.modFolders(characterPath);
+		if (!FileSystem.exists(path)) {
+			path = Paths.getPreloadPath(characterPath);
+		}
+
+		if (!FileSystem.exists(path))
+		#else
+		var path:String = Paths.getPreloadPath(characterPath);
+		if (!Assets.exists(path))
+		#end
+		{
+			path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json'); //If a character couldn't be found, change him to BF just to prevent a crash
+		}
+
+		var xml:Access = null;
+		var plainXML:String = File.getContent(path);
+			try {
+				var charXML:Xml = Xml.parse(plainXML).firstElement();
+				if (charXML == null) throw new Exception("Missing \"character\" node in XML.");
+				xml = new Access(charXML);
+			} catch (e) {
+				trace('Error while loading character ${character}: ${e}');
+				return null;
+			}
+
+		return xml;
+	}
+
+	public inline function loadXMLCharacter(xml:Access) {
+		this.xml = xml; // Modders wassup :D
+
+		var cFileToLoad:CharacterFile = {
+			animations: [],
+			image: '',
+			scale: 1,
+			sing_duration: 1,
+			healthicon: '',
+		
+			position: [0,0],
+			camera_position: [0,0],
+		
+			flip_x: false,
+			no_antialiasing: false,
+			healthbar_colors: [255, 255, 255],
+			vocals_file: ''
+		};
+		var animArr:Array<AnimArray> = []; 
+
+		cFileToLoad.image = 'characters/$curCharacter';
+		if (xml.x.exists("x")) cFileToLoad.position[0] = Std.parseFloat(xml.x.get("x"));
+		if (xml.x.exists("y")) cFileToLoad.position[1] = Std.parseFloat(xml.x.get("y"));
+		if (xml.x.exists("camx")) cFileToLoad.camera_position[0] = Std.parseFloat(xml.x.get("camx"));
+		if (xml.x.exists("camy")) cFileToLoad.camera_position[1] = Std.parseFloat(xml.x.get("camy"));
+		if (xml.x.exists("holdTime")) cFileToLoad.sing_duration = CoolUtil.getDefault(Std.parseFloat(xml.x.get("holdTime")), 4);
+		if (xml.x.exists("flipX")) cFileToLoad.flip_x = (xml.x.get("flipX") == "true");
+		if (xml.x.exists("icon")) cFileToLoad.healthicon = xml.x.get("icon");
+		if (xml.x.exists("color")) stringCol = xml.x.get("color");
+		if (xml.x.exists("scale")) cFileToLoad.scale = Std.parseFloat(xml.x.get("scale"));
+		if (xml.x.exists("antialiasing")) cFileToLoad.no_antialiasing = !(xml.x.get("antialiasing") == "true");
+		if (xml.x.exists("sprite")) cFileToLoad.image = 'characters/${xml.x.get("sprite")}';
+
+		for(node in xml.elements) {
+			switch(node.name) {
+				case "anim":
+					animArr.push(XMLHelper.addXMLAnimation(this, node));
+				case "use-extension" | "extension" | "ext":
+					trace('no scripts mf');
+				default:
+					// nothing
+			}
+		}
+		cFileToLoad.animations = animArr;
+
+		return cFileToLoad;
+	}
+
+	public static var characterProperties:Array<String> = [
+		"x", "y", "sprite", "scale", "antialiasing",
+		"flipX", "camx", "camy", "isPlayer", "icon",
+		"color", "gameOverChar", "holdTime"
+	];
+
+	public static var characterAnimProperties:Array<String> = [
+		"name", "anim", "x", "y", "fps", "loop", "indices"
+	];
 
 	override function update(elapsed:Float)
 	{

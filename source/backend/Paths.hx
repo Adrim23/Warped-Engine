@@ -123,6 +123,9 @@ class Paths
 	inline public static function getSharedPath(file:String = '')
 		return 'assets/shared/$file';
 
+	inline public static function getPreloadPath(file:String = '')
+		return 'assets/shared/$file';
+
 	inline static public function txt(key:String, ?folder:String)
 		return getPath('data/$key.txt', TEXT, folder, true);
 
@@ -157,13 +160,22 @@ class Paths
 		return returnSound('music/$key', modsAllowed);
 
 	inline static public function inst(song:String, ?modsAllowed:Bool = true):Sound
+	{
+		if (returnSound('${formatToSongPath(song)}/Inst', 'songs', modsAllowed, false) == null)
+        return returnSound('${formatToSongPath(song)}/song/Inst', 'songs', modsAllowed);
+		else
 		return returnSound('${formatToSongPath(song)}/Inst', 'songs', modsAllowed);
+	}
+		
 
 	inline static public function voices(song:String, postfix:String = null, ?modsAllowed:Bool = true):Sound
 	{
 		var songKey:String = '${formatToSongPath(song)}/Voices';
 		if(postfix != null) songKey += '-' + postfix;
 		//trace('songKey test: $songKey');
+		if (returnSound(songKey, 'songs', modsAllowed, false) == null) 
+		return returnSound('${formatToSongPath(song)}/song/Voices', 'songs', modsAllowed, false);
+		else
 		return returnSound(songKey, 'songs', modsAllowed, false);
 	}
 
@@ -380,11 +392,15 @@ class Paths
 			if(OpenFlAssets.exists(file, SOUND))
 				currentTrackedSounds.set(file, OpenFlAssets.getSound(file));
 			#end
-			else if(beepOnNull)
+			else 
 			{
-				trace('SOUND NOT FOUND: $key, PATH: $path');
-				FlxG.log.error('SOUND NOT FOUND: $key, PATH: $path');
-				return FlxAssets.getSound('flixel/sounds/beep');
+				if(beepOnNull)
+				{
+					trace('SOUND NOT FOUND: $key, PATH: $path');
+					FlxG.log.error('SOUND NOT FOUND: $key, PATH: $path');
+					return FlxAssets.getSound('flixel/sounds/beep');
+				}
+				return null;
 			}
 		}
 		localTrackedAssets.push(file);

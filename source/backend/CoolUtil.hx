@@ -159,4 +159,85 @@ class CoolUtil
 				text.borderStyle = NONE;
 		}
 	}
+
+	public static function parseNumberRange(input:String):Array<Int> {
+		var result:Array<Int> = [];
+		var parts:Array<String> = input.split(",");
+
+		for (part in parts) {
+			part = part.trim();
+			var idx = part.indexOf("..");
+			if (idx != -1) {
+				var start = Std.parseInt(part.substring(0, idx).trim());
+				var end = Std.parseInt(part.substring(idx + 2).trim());
+
+				if(start == null || end == null) {
+					continue;
+				}
+
+				if (start < end) {
+					for (j in start...end + 1) {
+						result.push(j);
+					}
+				} else {
+					for (j in end...start + 1) {
+						result.push(start + end - j);
+					}
+				}
+			} else {
+				var num = Std.parseInt(part);
+				if (num != null) {
+					result.push(num);
+				}
+			}
+		}
+		return result;
+	}
+
+	public static inline function isNaN(v:Dynamic) {
+		if (v is Float || v is Int)
+			return Math.isNaN(cast(v, Float));
+		return false;
+	}
+
+	public static inline function isNotNull(v:Dynamic) {
+		if (v != null) return true;
+		return false;
+	}
+
+	public static inline function getDefault<T>(v:Null<T>, defaultValue:T):T {
+		return (v == null || isNaN(v)) ? defaultValue : v;
+	}
+
+	public static function getColorFromDynamic(c:Dynamic):Null<FlxColor> {
+		// -1
+		if (c is Int) return c;
+
+		// -1.0
+		if (c is Float) return Std.int(c);
+
+		// "#FFFFFF"
+		if (c is String) return FlxColor.fromString(c);
+
+		// [255, 255, 255]
+		if (c is Array) {
+			var r:Int = 0;
+			var g:Int = 0;
+			var b:Int = 0;
+			var a:Int = 255;
+			var array:Array<Dynamic> = cast c;
+			for(k=>e in array) {
+				if (e is Int || e is Float) {
+					switch(k) {
+						case 0:	r = Std.int(e);
+						case 1:	g = Std.int(e);
+						case 2:	b = Std.int(e);
+						case 3:	a = Std.int(e);
+					}
+				}
+			}
+			return FlxColor.fromRGB(r, g, b, a);
+		}
+		return null;
+	}
 }
