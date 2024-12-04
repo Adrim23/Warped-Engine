@@ -65,3 +65,6 @@ import flixel.addons.transition.FlxTransitionableState;
 
 using StringTools;
 #end
+
+import adrim.backend.system.Logs;
+import adrim.backend.scripting.events.*;

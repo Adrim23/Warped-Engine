@@ -240,4 +240,8 @@ class CoolUtil
 		}
 		return null;
 	}
+
+	@:noUsing public static inline function getMacroAbstractClass(className:String) {
+		return Type.resolveClass('${className}_HSC');
+	}
 }

@@ -36,6 +36,10 @@
 		<define name="BASE_GAME_FILES" />
 	</section>
 
+    <!-- ______________________ NEEDED DEFINES ______________________ -->
+
+	<define name="hscriptPos" />
+
 	<!-- ____________________________ Window Settings ___________________________ -->
 
 	<!--These window settings apply to all targets-->
@@ -119,6 +123,7 @@
 	<haxelib name="linc_luajit" if="LUA_ALLOWED"/>
 	<haxelib name="SScript" if="HSCRIPT_ALLOWED"/>
 	<haxelib name="hscript-iris" if="HSCRIPT_ALLOWED" version="1.1.0"/>
+	<haxelib name="hscript-improved" if="HSCRIPT_ALLOWED"/>
 	<haxelib name="hxvlc" if="VIDEOS_ALLOWED"/>
 	<haxelib name="hxdiscord_rpc" if="DISCORD_ALLOWED"/>
 	<haxelib name="flxanimate"/>

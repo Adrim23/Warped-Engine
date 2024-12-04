@@ -19,6 +19,7 @@ import lime.utils.Assets;
 import openfl.utils.Assets as OpenFlAssets;
 import openfl.events.KeyboardEvent;
 import haxe.Json;
+import haxe.io.Path;
 
 import cutscenes.DialogueBoxPsych;
 
@@ -53,6 +54,11 @@ import psychlua.HScript;
 #if HSCRIPT_ALLOWED
 import tea.SScript;
 #end
+
+//Codename Shit
+import adrim.backend.scripting.*;
+import adrim.backend.options.Options;
+import adrim.backend.assets.AssetsLibraryList;
 
 /**
  * This is where all the Gameplay stuff happens and is managed
@@ -271,8 +277,12 @@ class PlayState extends MusicBeatState
 	//Stage Shit
 	public var stage:FlxSpriteGroup = new FlxSpriteGroup();
 	public var foreground:FlxSpriteGroup = new FlxSpriteGroup();
+
+	//Codename Scripts
+	public var scripts:ScriptPack;
 	override public function create()
 	{
+		Options.load(); //For codename script purposes
 		//trace('Playback Rate: ' + playbackRate);
 		Paths.clearStoredMemory();
 		if(nextReloadAll)
@@ -287,6 +297,8 @@ class PlayState extends MusicBeatState
 
 		// for lua
 		instance = this;
+
+		(scripts = new ScriptPack("PlayState")).setParent(this);
 
 		PauseSubState.songName = null; //Reset to default
 		playbackRate = ClientPrefs.getGameplaySetting('songspeed');
@@ -421,7 +433,21 @@ class PlayState extends MusicBeatState
 		boyfriend = new Character(0, 0, SONG.player1, true);
 		startCharacterPos(boyfriend);
 		if(StageData.stageXML == null) boyfriendGroup.add(boyfriend);
-		if(StageData.stageXML != null) StageData.loadXMLSprites(stageData);
+		if(StageData.stageXML != null) 
+		{
+			StageData.loadXMLSprites(stageData);
+			var scriptsFolders:Array<String> = ['stages/', 'data/stages/'];
+
+			for(folder in scriptsFolders) {
+				trace(Paths.modFolders(Mods.currentModDirectory+'/'+folder));
+				if (!FileSystem.exists(Paths.modFolders(Mods.currentModDirectory+'/'+folder))) continue;
+				var shit:Array<String> = FileSystem.readDirectory(Paths.modFolders(Mods.currentModDirectory+'/'+folder));
+				for (removeThis in shit)
+					if (FileSystem.isDirectory(removeThis)) shit.remove(removeThis);
+					addScript(Paths.modFolders(Mods.currentModDirectory+'/$folder/$curStage'+'.hx'));
+			}
+            scripts.setStageSprites(StageData.stageSprites);
+		}
 
 		add(stage);
 		
@@ -473,8 +499,34 @@ class PlayState extends MusicBeatState
 		
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		// STAGE SCRIPTS
-		#if LUA_ALLOWED startLuasNamed('stages/' + curStage + '.lua'); #end
-		#if HSCRIPT_ALLOWED startHScriptsNamed('stages/' + curStage + '.hx'); #end
+		if (StageData.stageXML == null)
+		{
+			#if LUA_ALLOWED startLuasNamed('stages/' + curStage + '.lua'); #end
+			#if HSCRIPT_ALLOWED startHScriptsNamed('stages/' + curStage + '.hx'); #end
+		}
+
+		//CODENAME SONG SPECIFIC SCRIPTS
+		#if HSCRIPT_ALLOWED
+		var scriptsFolders:Array<String> = ['songs/${songName.toLowerCase()}/scripts', 'data/charts/', 'songs/'];
+
+		for(folder in scriptsFolders) {
+			trace(Paths.modFolders(Mods.currentModDirectory+'/'+folder));
+			if (!FileSystem.exists(Paths.modFolders(Mods.currentModDirectory+'/'+folder))) continue;
+			var shit:Array<String> = FileSystem.readDirectory(Paths.modFolders(Mods.currentModDirectory+'/'+folder));
+			for (removeThis in shit)
+				if (FileSystem.isDirectory(removeThis)) shit.remove(removeThis);
+			trace(shit);
+			for(file in shit) {
+				if (folder == 'data/charts/')
+					Logs.trace('data/charts/ is deprecrated and will be removed in the future. Please move script $file to songs/', WARNING, DARKYELLOW);
+
+				addScript(Paths.modFolders(Mods.currentModDirectory+'/$folder/$file'));
+			}
+		}
+		scripts.set("SONG", SONG);
+		scripts.load();
+		scripts.call("create");
+		#end
 
 		// CHARACTER SCRIPTS
 		if(gf != null) startCharacterScripts(gf.curCharacter);
@@ -641,6 +693,7 @@ class PlayState extends MusicBeatState
 
 		stagesFunc(function(stage:BaseStage) stage.createPost());
 		callOnScripts('onCreatePost');
+		scripts.call("postCreate");
 		
 		var splash:NoteSplash = new NoteSplash();
 		grpNoteSplashes.add(splash);
@@ -1064,6 +1117,7 @@ class PlayState extends MusicBeatState
 				swagCounter += 1;
 			}, 5);
 		}
+		scripts.call("onPostStartCountdown");
 		return true;
 	}
 
@@ -1243,6 +1297,7 @@ class PlayState extends MusicBeatState
 
 	function startSong():Void
 	{
+		scripts.call("onSongStart");
 		startingSong = false;
 
 		@:privateAccess
@@ -1275,6 +1330,7 @@ class PlayState extends MusicBeatState
 		#end
 		setOnScripts('songLength', songLength);
 		callOnScripts('onSongStart');
+		scripts.call("onStartSong");
 	}
 
 	private var noteTypes:Array<String> = [];
@@ -1388,6 +1444,9 @@ class PlayState extends MusicBeatState
 				swagNote.scrollFactor.set();
 				unspawnNotes.push(swagNote);
 
+				var event = new NoteCreationEvent(swagNote, swagNote.noteData, swagNote.noteType, 0, 0, swagNote.mustPress, swagNote.texture, 0.7, swagNote.animSuffix);
+				event = scripts.event("onNoteCreation", event);
+
 				var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
 				final roundSus:Int = Math.round(swagNote.sustainLength / curStepCrochet);
 				if(roundSus > 0)
@@ -1405,6 +1464,9 @@ class PlayState extends MusicBeatState
 						sustainNote.parent = swagNote;
 						unspawnNotes.push(sustainNote);
 						swagNote.tail.push(sustainNote);
+
+						var event = new NoteCreationEvent(sustainNote, sustainNote.noteData, sustainNote.noteType, 0, 0, sustainNote.mustPress, sustainNote.texture, 0.7, sustainNote.animSuffix);
+						event = scripts.event("onNoteCreation", event);
 
 						sustainNote.correctionOffset = swagNote.height / 2;
 						if(!PlayState.isPixelStage)
@@ -1685,6 +1747,7 @@ class PlayState extends MusicBeatState
 		}
 		else FlxG.camera.followLerp = 0;
 		callOnScripts('onUpdate', [elapsed]);
+		scripts.call("update", [elapsed]);
 
 		super.update(elapsed);
 
@@ -1861,6 +1924,7 @@ class PlayState extends MusicBeatState
 
 		setOnScripts('botPlay', cpuControlled);
 		callOnScripts('onUpdatePost', [elapsed]);
+		scripts.call("postUpdate", [elapsed]);
 	}
 
 	// Health icon updaters
@@ -2382,6 +2446,7 @@ class PlayState extends MusicBeatState
 	public function endSong()
 	{
 		//Should kill you if you tried to cheat
+		scripts.call("onSongEnd");
 		if(!startingSong)
 		{
 			notes.forEachAlive(function(daNote:Note)
@@ -2867,6 +2932,7 @@ class PlayState extends MusicBeatState
 		stagesFunc(function(stage:BaseStage) stage.noteMiss(daNote));
 		var result:Dynamic = callOnLuas('noteMiss', [notes.members.indexOf(daNote), daNote.noteData, daNote.noteType, daNote.isSustainNote]);
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('noteMiss', [daNote]);
+		//var event:NoteMissEvent = scripts.event("onPlayerMiss", EventManager.get(NoteMissEvent).recycle(daNote, -10, 1, true, daNote != null ? -0.0475 : -0.04, Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2), daNote == null, combo > 5, "sad", true, true, "miss", [boyfriend], 0, daNote != null ? daNote.noteType : null, daNote.noteData, 0));
 	}
 
 	function noteMissPress(direction:Int = 1):Void //You pressed a key when there was no notes to press for this key
@@ -2882,8 +2948,11 @@ class PlayState extends MusicBeatState
 	function noteMissCommon(direction:Int, note:Note = null)
 	{
 		// score and data
+		var event:NoteMissEvent = scripts.event("onPlayerMiss", new NoteMissEvent(note, -10, 1, true, 0.1, 'missNote${FlxG.random.int(1,3)}', FlxG.random.float(0.1, 0.2), note == null, combo > 5, "sad", true, true, "miss", [boyfriend], 0, note != null ? note.noteType : null, note.noteData, 0));
+		if (event.cancelled) return;
+
 		var subtract:Float = pressMissDamage;
-		if(note != null) subtract = note.missHealth;
+		if(note != null) subtract = event.healthGain;
 
 		// GUITAR HERO SUSTAIN CHECK LOL!!!!
 		if (note != null && guitarHeroSustains && note.parent == null) {
@@ -2931,13 +3000,15 @@ class PlayState extends MusicBeatState
 		}
 
 		var lastCombo:Int = combo;
-		combo = 0;
+		if (event.resetCombo) combo = 0;
 
 		health -= subtract * healthLoss;
-		if(!practiceMode) songScore -= 10;
-		if(!endingSong) songMisses++;
+		if(!practiceMode) songScore += event.score;
+		if(!endingSong) songMisses += event.misses;
 		totalPlayed++;
 		RecalculateRating(true);
+
+		if (event.playMissSound) FlxG.sound.play(Paths.sound(event.missSound), event.missVolume);
 
 		// play character anims
 		var char:Character = boyfriend;
@@ -2951,13 +3022,13 @@ class PlayState extends MusicBeatState
 			var animToPlay:String = singAnimations[Std.int(Math.abs(Math.min(singAnimations.length-1, direction)))] + 'miss' + postfix;
 			char.playAnim(animToPlay, true);
 
-			if(char != gf && lastCombo > 5 && gf != null && gf.hasAnimation('sad'))
+			if(char != gf && lastCombo > 5 && gf != null && gf.hasAnimation(event.gfSadAnim))
 			{
-				gf.playAnim('sad');
+				gf.playAnim(event.gfSadAnim);
 				gf.specialAnim = true;
 			}
 		}
-		vocals.volume = 0;
+		if (event.muteVocals) vocals.volume = 0;
 	}
 
 	function opponentNoteHit(note:Note):Void
@@ -3174,6 +3245,7 @@ class PlayState extends MusicBeatState
 
 		NoteSplash.configs.clear();
 		instance = null;
+		scripts.call("destroy");
 		super.destroy();
 	}
 
@@ -3189,6 +3261,7 @@ class PlayState extends MusicBeatState
 		lastStepHit = curStep;
 		setOnScripts('curStep', curStep);
 		callOnScripts('onStepHit');
+		scripts.call("stepHit", [curStep]);
 	}
 
 	var lastBeatHit:Int = -1;
@@ -3216,6 +3289,7 @@ class PlayState extends MusicBeatState
 
 		setOnScripts('curBeat', curBeat);
 		callOnScripts('onBeatHit');
+		scripts.call("beatHit", [curBeat]);
 	}
 
 	public function characterBopper(beat:Int):Void
@@ -3263,6 +3337,7 @@ class PlayState extends MusicBeatState
 
 		setOnScripts('curSection', curSection);
 		callOnScripts('onSectionHit');
+		scripts.call("measureHit", [curSection]);
 	}
 
 	#if LUA_ALLOWED
@@ -3327,6 +3402,16 @@ class PlayState extends MusicBeatState
 			if(newScript != null)
 				newScript.destroy();
 		}
+	}
+
+	public function addScript(file:String) {
+		var ext = Path.extension(file).toLowerCase();
+		if (Script.scriptExtensions.contains(ext))
+		{
+			trace('Found script!! '+file);
+			scripts.add(Script.create(file));
+		}
+			
 	}
 	#end
 

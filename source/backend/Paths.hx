@@ -14,10 +14,13 @@ import openfl.system.System;
 import openfl.geom.Rectangle;
 
 import lime.utils.Assets;
+import lime.utils.AssetLibrary;
 import flash.media.Sound;
 
 import haxe.Json;
 
+import adrim.backend.assets.AssetsLibraryList;
+import adrim.backend.scripting.Script;
 
 #if MODS_ALLOWED
 import backend.Mods;
@@ -521,4 +524,73 @@ class Paths
 		spr.loadAtlasEx(folderOrImg, spriteJson, animationJson);
 	}
 	#end
+
+	//Codename
+	public static var assetsTree:AssetsLibraryList;
+	
+	static public function getFolderDirectories(key:String, addPath:Bool = false, source:AssetSource = BOTH):Array<String> {
+		if (!key.endsWith("/")) key += "/";
+		var content = assetsTree.getFolders('assets/$key', source);
+		if (addPath) {
+			for(k=>e in content)
+				content[k] = '$key$e';
+		}
+		return content;
+	}
+	static public function getFolderContent(key:String, addPath:Bool = false, source:AssetSource = BOTH):Array<String> {
+		// designed to work both on windows and web
+		if (!key.endsWith("/")) key += "/";
+		var content = assetsTree.getFiles('assets/$key', source);
+		if (addPath) {
+			for(k=>e in content)
+				content[k] = '$key$e';
+		}
+		return content;
+	}
+
+	public static function getFrames(key:String, assetsPath:Bool = false, ?library:String) {
+		return getSparrowAtlas(key, library, true);
+	}
+
+	// Used in Script.hx
+	@:noCompletion public static function getFilenameFromLibFile(path:String) {
+		var file = new haxe.io.Path(path);
+		if(file.file.startsWith("LIB_")) {
+			return file.dir + "." + file.ext;
+		}
+		return path;
+	}
+
+	@:noCompletion public static function getLibFromLibFile(path:String) {
+		var file = new haxe.io.Path(path);
+		if(file.file.startsWith("LIB_")) {
+			return file.file.substr(4);
+		}
+		return "";
+	}
+
+	inline static public function script(key:String, ?library:String, isAssetsPath:Bool = false) {
+		var scriptPath = isAssetsPath ? key : getPath(key, library);
+		if (!OpenFlAssets.exists(scriptPath)) {
+			var p:String;
+			for(ex in Script.scriptExtensions) {
+				p = '$scriptPath.$ex';
+				if (OpenFlAssets.exists(p)) {
+					scriptPath = p;
+					break;
+				}
+			}
+		}
+		return scriptPath;
+	}
+}
+
+class ScriptPathInfo {
+	public var file:String;
+	public var library:AssetLibrary;
+
+	public function new(file:String, library:AssetLibrary) {
+		this.file = file;
+		this.library = library;
+	}
 }

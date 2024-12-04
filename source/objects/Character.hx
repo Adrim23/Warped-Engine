@@ -312,7 +312,7 @@ class Character extends FlxSprite
 		if (xml.x.exists("camy")) cFileToLoad.camera_position[1] = Std.parseFloat(xml.x.get("camy"));
 		if (xml.x.exists("holdTime")) cFileToLoad.sing_duration = CoolUtil.getDefault(Std.parseFloat(xml.x.get("holdTime")), 4);
 		if (xml.x.exists("flipX")) cFileToLoad.flip_x = (xml.x.get("flipX") == "true");
-		if (xml.x.exists("icon")) cFileToLoad.healthicon = xml.x.get("icon");
+		if (xml.x.exists("icon")) cFileToLoad.healthicon = xml.x.get("icon"); else cFileToLoad.healthicon = this.curCharacter;
 		if (xml.x.exists("color")) stringCol = xml.x.get("color");
 		if (xml.x.exists("scale")) cFileToLoad.scale = Std.parseFloat(xml.x.get("scale"));
 		if (xml.x.exists("antialiasing")) cFileToLoad.no_antialiasing = !(xml.x.get("antialiasing") == "true");
