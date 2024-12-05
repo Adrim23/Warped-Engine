@@ -2,6 +2,7 @@ package states.stages;
 
 import states.stages.objects.*;
 import objects.Character;
+import backend.Conductor;
 
 class Philly extends BaseStage
 {

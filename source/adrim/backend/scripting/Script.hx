@@ -7,6 +7,7 @@ import flixel.util.FlxStringUtil;
 import flixel.FlxBasic;
 import lime.utils.Assets;
 import adrim.backend.scripting.HScriptCodename;
+import flixel.ui.FlxBar;
 
 @:allow(adrim.backend.scripting.ScriptPack)
 /**
@@ -26,6 +27,9 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			"Math"			  => Math,
 			"Reflect"			  => Reflect,
 			"StringTools"	   => StringTools,
+			"FileSystem"	   => FileSystem,
+			"File"	           => File,
+			"Type"	           => Type,
 			"Json"			  => haxe.Json,
 
 			// OpenFL & Lime related stuff
@@ -51,6 +55,17 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			"FlxTypeText"	   => flixel.addons.text.FlxTypeText,
 			"FlxText"		   => flixel.text.FlxText,
 			"FlxTimer"		  => flixel.util.FlxTimer,
+			"FlxBar"		  => flixel.ui.FlxBar,
+			"FlxBarFillDirection" => {
+				LEFT_TO_RIGHT: FlxBarFillDirection.LEFT_TO_RIGHT,
+				RIGHT_TO_LEFT: FlxBarFillDirection.RIGHT_TO_LEFT,
+				TOP_TO_BOTTOM: FlxBarFillDirection.TOP_TO_BOTTOM,
+				BOTTOM_TO_TOP: FlxBarFillDirection.BOTTOM_TO_TOP,
+				HORIZONTAL_INSIDE_OUT: FlxBarFillDirection.HORIZONTAL_INSIDE_OUT,
+				HORIZONTAL_OUTSIDE_IN: FlxBarFillDirection.HORIZONTAL_OUTSIDE_IN,
+				VERTICAL_INSIDE_OUT: FlxBarFillDirection.VERTICAL_INSIDE_OUT,
+				VERTICAL_OUTSIDE_IN: FlxBarFillDirection.VERTICAL_OUTSIDE_IN,
+			},
 			"FlxPoint"		  => CoolUtil.getMacroAbstractClass("flixel.math.FlxPoint"),
 			"FlxAxes"		   => CoolUtil.getMacroAbstractClass("flixel.util.FlxAxes"),
 			"FlxColor"		  => CoolUtil.getMacroAbstractClass("flixel.util.FlxColor"),
@@ -91,6 +106,7 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			//"EngineUtil"		=> funkin.backend.utils.EngineUtil,
 			//"MemoryUtil"		=> funkin.backend.utils.MemoryUtil,
 			//"BitmapUtil"		=> funkin.backend.utils.BitmapUtil, TBD
+			"WindowUtils"		=> adrim.backend.utils.WindowUtils
 		];
 	}
 	public static function getDefaultPreprocessors():Map<String, Dynamic> {

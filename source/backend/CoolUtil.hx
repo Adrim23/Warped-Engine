@@ -2,6 +2,9 @@ package backend;
 
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
+import flixel.util.typeLimit.OneOfTwo;
+import haxe.io.Bytes;
+import haxe.io.Path;
 
 class CoolUtil
 {
@@ -243,5 +246,53 @@ class CoolUtil
 
 	@:noUsing public static inline function getMacroAbstractClass(className:String) {
 		return Type.resolveClass('${className}_HSC');
+	}
+
+	/**
+	 * Safe saves a file (even adding eventual missing folders) and shows a warning box instead of making the program crash
+	 * @param path Path to save the file at.
+	 * @param content Content of the file to save (as String or Bytes).
+	 */
+	 @:noUsing public static function safeSaveFile(path:String, content:OneOfTwo<String, Bytes>, showErrorBox:Bool = true) {
+		#if sys
+		try {
+			addMissingFolders(Path.directory(path));
+			if(content is Bytes) sys.io.File.saveBytes(path, content);
+			else sys.io.File.saveContent(path, content);
+		} catch(e) {
+			var errMsg:String = 'Error while trying to save the file: ${Std.string(e).replace('\n', ' ')}';
+			Logs.traceColored([Logs.logText(errMsg, RED)], ERROR);
+			if(showErrorBox) adrim.backend.utils.NativeAPI.showMessageBox("Codename Engine Warning", errMsg, MSG_WARNING);
+		}
+		#end
+	 }
+	 
+	 /**
+	 * Creates eventual missing folders to the specified `path`
+	 *
+	 * WARNING: eventual files in `path` will be considered as folders! Just to make possible folders be named as `songs.json` for example
+	 *
+	 * @param path Path to check.
+	 * @return The initial Path.
+	 */
+	@:noUsing public static function addMissingFolders(path:String):String {
+		#if sys
+		var folders:Array<String> = path.split("/");
+		var currentPath:String = "";
+
+		for (folder in folders) {
+			currentPath += folder + "/";
+			if (!FileSystem.exists(currentPath))
+				FileSystem.createDirectory(currentPath);
+		}
+		#end
+		return path;
+	}
+
+	public static inline function floorInt(e:Float) {
+		var r = Std.int(e);
+		if (e < 0 && r != e)
+			r--;
+		return r;
 	}
 }

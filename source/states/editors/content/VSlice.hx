@@ -5,6 +5,7 @@ import backend.Difficulty;
 
 import flixel.math.FlxMath;
 import flixel.util.FlxSort;
+import backend.Conductor;
 
 // Chart
 typedef VSliceChart =

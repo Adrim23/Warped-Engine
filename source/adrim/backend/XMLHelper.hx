@@ -198,8 +198,10 @@ class XMLHelper
 		}
 		if (value == null) return VALUE_NULL;
 
+		var retry:Bool=false;
 		try {
 			Reflect.setProperty(o, keys[0], value);
+			if (property.att.type.toLowerCase() == "b" || property.att.type.toLowerCase() == "bool" || property.att.type.toLowerCase() == "boolean") retry = true;
 		} catch(e) {
 			var str = 'Failed to apply XML property: $e on ${Type.getClass(object)}';
 			if(isPath) {
@@ -208,6 +210,7 @@ class XMLHelper
 			trace(str);
 			return REFLECT_ERROR;
 		}
+		if (retry) Reflect.setProperty(o, keys[0], value);
 		return OK;
 	}
 }

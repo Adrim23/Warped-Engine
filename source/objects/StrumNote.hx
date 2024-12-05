@@ -16,6 +16,13 @@ class StrumNote extends FlxSprite
 	private var player:Int;
 	
 	public var texture(default, set):String = null;
+	public var size(default, set):Null<Float> = null;
+	function set_size(value:Null<Float>):Null<Float> {
+		if (value == null) return null;
+		size = value;
+		reloadNote();
+		return value;
+	}
 	private function set_texture(value:String):String {
 		if(texture != value) {
 			texture = value;
@@ -58,6 +65,7 @@ class StrumNote extends FlxSprite
 		var customSkin:String = skin + Note.getNoteSkinPostfix();
 		if(Paths.fileExists('images/$customSkin.png', IMAGE)) skin = customSkin;
 
+		size = 0.7;
 		texture = skin; //Load texture and anims
 		scrollFactor.set();
 		playAnim('static');
@@ -111,7 +119,7 @@ class StrumNote extends FlxSprite
 			animation.addByPrefix('red', 'arrowRIGHT');
 
 			antialiasing = ClientPrefs.data.antialiasing;
-			setGraphicSize(Std.int(width * 0.7));
+			setGraphicSize(Std.int(width * size));
 
 			switch (Math.abs(noteData) % 4)
 			{
@@ -146,6 +154,12 @@ class StrumNote extends FlxSprite
 		x += Note.swagWidth * noteData;
 		x += 50;
 		x += ((FlxG.width / 2) * player);
+	}
+
+	public function setStrumPos()
+	{
+		x += Note.swagWidth * noteData;
+		x += 50;
 	}
 
 	override function update(elapsed:Float) {

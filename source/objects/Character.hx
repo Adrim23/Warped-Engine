@@ -13,6 +13,7 @@ import haxe.io.Path;
 import haxe.xml.Access;
 
 import backend.Song;
+import backend.Conductor;
 import states.stages.objects.TankmenBG;
 import adrim.backend.XMLHelper;
 
@@ -77,6 +78,7 @@ class Character extends FlxSprite
 	public var missingText:FlxText;
 	public var hasMissAnimations:Bool = false;
 	public var vocalsFile:String = '';
+	public var cameraOffset:FlxPoint=new FlxPoint(0,0);
 
 	//Used on Character Editor
 	public var imageFile:String = '';
@@ -201,7 +203,8 @@ class Character extends FlxSprite
 
 		// positioning
 		positionArray = json.position;
-		cameraPosition = json.camera_position;
+		cameraOffset.set(json.camera_position[0],json.camera_position[1]);
+		cameraPosition = [cameraOffset.x,cameraOffset.y];
 
 		// data
 		healthIcon = json.healthicon;
@@ -345,6 +348,10 @@ class Character extends FlxSprite
 
 	override function update(elapsed:Float)
 	{
+		cameraPosition[0] = cameraOffset.x;
+		cameraPosition[1] = cameraOffset.y;
+		if (cameraPosition[0] != cameraOffset.x) cameraOffset.x = cameraPosition[0];
+		if (cameraPosition[1] != cameraOffset.y) cameraOffset.y = cameraPosition[1];
 		if(isAnimateAtlas) atlas.update(elapsed);
 
 		if(debugMode || (!isAnimateAtlas && animation.curAnim == null) || (isAnimateAtlas && (atlas.anim.curInstance == null || atlas.anim.curSymbol == null)))

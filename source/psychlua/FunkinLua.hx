@@ -3,6 +3,7 @@ package psychlua;
 
 import backend.WeekData;
 import backend.Highscore;
+import backend.Conductor;
 import backend.Song;
 
 import openfl.Lib;

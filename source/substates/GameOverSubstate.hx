@@ -9,6 +9,7 @@ import flixel.math.FlxPoint;
 
 import states.StoryMenuState;
 import states.FreeplayState;
+import backend.Conductor;
 
 class GameOverSubstate extends MusicBeatSubstate
 {

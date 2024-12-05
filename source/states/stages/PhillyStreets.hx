@@ -12,6 +12,7 @@ import states.stages.objects.*;
 import objects.Note;
 
 import cutscenes.CutsceneHandler;
+import backend.Conductor;
 
 enum NeneState
 {

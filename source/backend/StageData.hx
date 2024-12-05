@@ -248,6 +248,7 @@ class StageData {
 	{
 		var stageToLoad:StageFile = StageData.dummy();
 		var stagePath:String = Paths.modFolders('stages/' + stageName + '.xml');
+		if (!FileSystem.exists(stagePath)) stagePath = Paths.modFolders('data/stages/' + stageName + '.xml');
         if (FileSystem.exists(stagePath))
 		{
 			trace('found stage xml at $stagePath');
@@ -340,7 +341,9 @@ class StageData {
 					}
 
 					stageSprites.set(nameSpr, spr);
-					PlayState.instance.stage.add(spr);
+					PlayState.instance.add(spr);
+					for(e in node.nodes.property)
+						XMLHelper.applyXMLProperty(spr, e);
 					xmlSprites.push(spr);
 					spr;
 				case "box" | "solid":
@@ -365,29 +368,21 @@ class StageData {
 					}
 
 					stageSprites.set(nameSpr, spr);
-					PlayState.instance.stage.add(spr);
+					PlayState.instance.add(spr);
+					for(e in node.nodes.property)
+						XMLHelper.applyXMLProperty(spr, e);
 					xmlSprites.push(spr);
 					spr;
-				default: null;
-			}
-
-			for (sprite in xmlSprites) {
-				if (sprite != null) {
-					for(e in node.nodes.property)
-						XMLHelper.applyXMLProperty(sprite, e);
-				}
-			}
-
-			switch(node.name)
-			{
 				case "boyfriend" | "bf" | "player":
-				PlayState.instance.boyfriendGroup.add(PlayState.instance.boyfriend);	
+				PlayState.instance.add(PlayState.instance.boyfriendGroup);	
+				null;
 				case "girlfriend" | "gf":
-				PlayState.instance.gfGroup.add(PlayState.instance.gf);	
+				PlayState.instance.add(PlayState.instance.gfGroup);	
+				null;
 				case "dad" | "opponent":
-				PlayState.instance.dadGroup.add(PlayState.instance.dad);	
-				default:
-				//Nothing lmao	
+				PlayState.instance.add(PlayState.instance.dadGroup);
+				null;
+				default: null;
 			}
 		}
 	}

@@ -4,6 +4,8 @@ import haxe.Json;
 import lime.utils.Assets;
 
 import objects.Note;
+import adrim.backend.chart.*;
+import adrim.backend.assets.JsonParserCN;
 
 typedef SwagSong =
 {
@@ -148,7 +150,10 @@ class Song
 		#end
 			rawData = Assets.getText(_lastPath);
 
-		return rawData != null ? parseJSON(rawData, jsonInput) : null;
+		//Intercepting the chart process to check codename shit
+		//if (!StringTools.startsWith(jsonInput, folder)) rawData = convertCodename(folder, jsonInput);
+        if (rawData == null) rawData = File.getContent(Paths.json('$formattedFolder/charts/$formattedSong'));
+		return rawData != null ? parseJSON(rawData, jsonInput, 'psych_v1') : null;
 	}
 
 	public static function parseJSON(rawData:String, ?nameForError:String = null, ?convertTo:String = 'psych_v1'):SwagSong
@@ -178,5 +183,13 @@ class Song
 			}
 		}
 		return songJson;
+	}
+
+	public static function convertCodename(songName:String, diff:String)
+	{
+		var cnChart:ChartData = Chart.parse(songName, diff);
+	    var parsedChart = Json.stringify(PsychParser.encode(cnChart), null, "\t");
+		trace(parsedChart);
+		return JsonParserCN.parse(parsedChart);
 	}
 }

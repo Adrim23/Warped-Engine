@@ -583,6 +583,18 @@ class Paths
 		}
 		return scriptPath;
 	}
+
+	static public function chart(song:String, ?difficulty:String = "normal"):String
+	{
+		difficulty = difficulty.toLowerCase();
+		song = song.toLowerCase();
+		trace(modFolders(Mods.currentModDirectory+'/songs/$song/charts/$difficulty.json'));
+
+		return modFolders(Mods.currentModDirectory+'/songs/$song/charts/$difficulty.json');
+	}
+
+	inline static public function file(file:String)
+		return modFolders(Mods.currentModDirectory+'/$file');
 }
 
 class ScriptPathInfo {

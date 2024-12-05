@@ -5,6 +5,7 @@ import backend.StageData;
 import backend.WeekData;
 import backend.Song;
 import backend.Rating;
+import backend.Conductor;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;
@@ -229,6 +230,9 @@ class PlayState extends MusicBeatState
 
 	public var defaultCamZoom:Float = 1.05;
 	public var defaultHUDZoom:Float = 1;
+	//Weird Gorefield cam shit
+	public var camZoomingInterval:Int = 4;
+	public var camZoomingStrength:Float = 1;
 
 	// how big to stretch the pixel art assets
 	public static var daPixelZoom:Float = 6;
@@ -278,8 +282,9 @@ class PlayState extends MusicBeatState
 	public var stage:FlxSpriteGroup = new FlxSpriteGroup();
 	public var foreground:FlxSpriteGroup = new FlxSpriteGroup();
 
-	//Codename Scripts
+	//Codename Shit
 	public var scripts:ScriptPack;
+	public var curCameraTarget:Int;
 	override public function create()
 	{
 		Options.load(); //For codename script purposes
@@ -423,28 +428,29 @@ class PlayState extends MusicBeatState
 			gf = new Character(0, 0, SONG.gfVersion);
 			startCharacterPos(gf);
 			gfGroup.scrollFactor.set(0.95, 0.95);
-			if(StageData.stageXML == null) gfGroup.add(gf);
+			gfGroup.add(gf);
 		}
 
 		dad = new Character(0, 0, SONG.player2);
 		startCharacterPos(dad, true);
-		if(StageData.stageXML == null) dadGroup.add(dad);
+		dadGroup.add(dad);
 
 		boyfriend = new Character(0, 0, SONG.player1, true);
 		startCharacterPos(boyfriend);
-		if(StageData.stageXML == null) boyfriendGroup.add(boyfriend);
+		boyfriendGroup.add(boyfriend);
 		if(StageData.stageXML != null) 
 		{
 			StageData.loadXMLSprites(stageData);
 			var scriptsFolders:Array<String> = ['stages/', 'data/stages/'];
 
 			for(folder in scriptsFolders) {
-				trace(Paths.modFolders(Mods.currentModDirectory+'/'+folder));
 				if (!FileSystem.exists(Paths.modFolders(Mods.currentModDirectory+'/'+folder))) continue;
 				var shit:Array<String> = FileSystem.readDirectory(Paths.modFolders(Mods.currentModDirectory+'/'+folder));
 				for (removeThis in shit)
 					if (FileSystem.isDirectory(removeThis)) shit.remove(removeThis);
-					addScript(Paths.modFolders(Mods.currentModDirectory+'/$folder/$curStage'+'.hx'));
+				for (scriptName in shit)
+					if (scriptName.split('.')[0] == curStage && (scriptName.split('.')[1] == 'hx' || scriptName.split('.')[1] == 'hscript' || scriptName.split('.')[1] == 'hxs' || scriptName.split('.')[1] == 'hsc'))
+					addScript(Paths.modFolders(Mods.currentModDirectory+'/$folder/$scriptName'));
 			}
             scripts.setStageSprites(StageData.stageSprites);
 		}
@@ -460,9 +466,12 @@ class PlayState extends MusicBeatState
 		}
 		else
 		{
-			add(gfGroup);
-			add(dadGroup);
-			add(boyfriendGroup);
+			if(StageData.stageXML == null)
+			{
+				add(gfGroup);
+				add(dadGroup);
+				add(boyfriendGroup);
+			}
 		}
 
 		add(foreground);
@@ -505,7 +514,7 @@ class PlayState extends MusicBeatState
 			#if HSCRIPT_ALLOWED startHScriptsNamed('stages/' + curStage + '.hx'); #end
 		}
 
-		//CODENAME SONG SPECIFIC SCRIPTS
+		//CODENAME SONG SPECIFIC AND GENERAL SCRIPTS
 		#if HSCRIPT_ALLOWED
 		var scriptsFolders:Array<String> = ['songs/${songName.toLowerCase()}/scripts', 'data/charts/', 'songs/'];
 
@@ -519,7 +528,7 @@ class PlayState extends MusicBeatState
 			for(file in shit) {
 				if (folder == 'data/charts/')
 					Logs.trace('data/charts/ is deprecrated and will be removed in the future. Please move script $file to songs/', WARNING, DARKYELLOW);
-
+				else if (file.split('.')[1] == 'hx' || file.split('.')[1] == 'hscript' || file.split('.')[1] == 'hxs' || file.split('.')[1] == 'hsc')
 				addScript(Paths.modFolders(Mods.currentModDirectory+'/$folder/$file'));
 			}
 		}
@@ -1727,6 +1736,7 @@ class PlayState extends MusicBeatState
 
 	public var paused:Bool = false;
 	public var canReset:Bool = true;
+	public var fakeCrochet:Float = 0;
 	var startedCountdown:Bool = false;
 	var canPause:Bool = true;
 	var freezeCamera:Bool = false;
@@ -1866,14 +1876,14 @@ class PlayState extends MusicBeatState
 				{
 					if(startedCountdown)
 					{
-						var fakeCrochet:Float = (60 / SONG.bpm) * 1000;
+						fakeCrochet = (60 / SONG.bpm) * 1000;
 						notes.forEachAlive(function(daNote:Note)
 						{
 							var strumGroup:FlxTypedGroup<StrumNote> = playerStrums;
 							if(!daNote.mustPress) strumGroup = opponentStrums;
 
 							var strum:StrumNote = strumGroup.members[daNote.noteData];
-							daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+							if(daNote.followStrum) daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
 
 							if(daNote.mustPress)
 							{
@@ -2363,6 +2373,7 @@ class PlayState extends MusicBeatState
 		{
 			moveCameraToGirlfriend();
 			callOnScripts('onMoveCamera', ['gf']);
+			curCameraTarget=2;
 			return;
 		}
 
@@ -2372,6 +2383,7 @@ class PlayState extends MusicBeatState
 			callOnScripts('onMoveCamera', ['dad']);
 		else
 			callOnScripts('onMoveCamera', ['boyfriend']);
+		if (isDad) curCameraTarget=0; else curCameraTarget=1;
 	}
 	
 	public function moveCameraToGirlfriend()

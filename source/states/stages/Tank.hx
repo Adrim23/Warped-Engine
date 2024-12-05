@@ -4,6 +4,7 @@ import states.stages.objects.*;
 import cutscenes.CutsceneHandler;
 import substates.GameOverSubstate;
 import objects.Character;
+import backend.Conductor;
 
 class Tank extends BaseStage
 {

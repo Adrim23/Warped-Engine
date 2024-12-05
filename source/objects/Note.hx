@@ -2,6 +2,7 @@ package objects;
 
 import backend.animation.PsychAnimationController;
 import backend.NoteTypesConfig;
+import backend.Conductor;
 
 import shaders.RGBPalette;
 import shaders.RGBPalette.RGBShaderReference;
@@ -141,6 +142,8 @@ class Note extends FlxSprite
 		return hitsoundForce ? hitsoundVolume : 0.0;
 	}
 	public var hitsound:String = 'hitsound';
+
+	public var followStrum:Bool = true; //If true, follows dad's or bf's strums. Disable it for custom strumline shit
 
 	private function set_multSpeed(value:Float):Float {
 		resizeByRatio(value / multSpeed);
