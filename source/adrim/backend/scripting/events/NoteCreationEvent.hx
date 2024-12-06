@@ -31,12 +31,26 @@ final class NoteCreationEvent extends CancellableEvent {
 	/**
 	 * Whenever the note will need to be hit by the player
 	 */
-	public var mustHit:Bool;
+	public var mustHit(default, set):Bool;
+
+	function set_mustHit(value:Bool)
+	{
+		mustHit = value;
+		note.mustPress = value;
+		return value;
+	}
 
 	/**
 	 * Note sprite, if you only want to replace the sprite.
 	 */
-	public var noteSprite:String;
+	public var noteSprite(default, set):String;
+
+	function set_noteSprite(value:String)
+	{
+		noteSprite = value;
+		note.texture = value;
+		return value;
+	}
 
 	/**
 	 * Note scale, if you only want to replace the scale.

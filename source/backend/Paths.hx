@@ -143,6 +143,12 @@ class Paths
 
 	inline static public function shaderVertex(key:String, ?folder:String)
 		return getPath('shaders/$key.vert', TEXT, folder, true);
+	
+	inline static public function fragShader(key:String, ?folder:String)
+		return getPath('shaders/$key.frag', TEXT, folder, true);
+
+	inline static public function vertShader(key:String, ?folder:String)
+		return getPath('shaders/$key.vert', TEXT, folder, true);
 
 	inline static public function lua(key:String, ?folder:String)
 		return getPath('$key.lua', TEXT, folder, true);
@@ -171,13 +177,16 @@ class Paths
 	}
 		
 
-	inline static public function voices(song:String, postfix:String = null, ?modsAllowed:Bool = true):Sound
+	inline static public function voices(song:String, postfix:String = null, ?modsAllowed:Bool = true, isOp:Bool=false):Sound
 	{
 		var songKey:String = '${formatToSongPath(song)}/Voices';
 		if(postfix != null) songKey += '-' + postfix;
 		//trace('songKey test: $songKey');
 		if (returnSound(songKey, 'songs', modsAllowed, false) == null) 
-		return returnSound('${formatToSongPath(song)}/song/Voices', 'songs', modsAllowed, false);
+		{
+			if (isOp) return null;
+			else return returnSound('${formatToSongPath(song)}/song/Voices', 'songs', modsAllowed, false);
+		}
 		else
 		return returnSound(songKey, 'songs', modsAllowed, false);
 	}

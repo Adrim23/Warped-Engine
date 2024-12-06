@@ -144,6 +144,15 @@ class Note extends FlxSprite
 	public var hitsound:String = 'hitsound';
 
 	public var followStrum:Bool = true; //If true, follows dad's or bf's strums. Disable it for custom strumline shit
+	
+	public var avoid(default, set):Bool = false; //Same as ignoreNote but for codename
+
+	function set_avoid(value:Bool)
+	{
+		avoid = value;
+		ignoreNote = value;
+		return value;
+	}
 
 	private function set_multSpeed(value:Float):Float {
 		resizeByRatio(value / multSpeed);
@@ -186,7 +195,7 @@ class Note extends FlxSprite
 			rgbShader.b = 0xFF0000FF;
 		}
 	}
-
+	
 	private function set_noteType(value:String):String {
 		noteSplashData.texture = PlayState.SONG != null ? PlayState.SONG.splashSkin : 'noteSplashes';
 		defaultRGB();

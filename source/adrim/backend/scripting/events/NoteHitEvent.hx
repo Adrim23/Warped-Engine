@@ -104,6 +104,34 @@ final class NoteHitEvent extends CancellableEvent {
 	 */
 	public var forceAnim:Bool = true;
 
+	public function new(miss:Bool,cac:Bool,cS:Bool,sR:Bool,n:Note,chars:Array<Character>,pl:Bool,nT:String,suffix:String,rPrefix:String,rSuffix:String,dir:Int,sc:Int,acc:Float,hGain:Float,rate:String,sS:Bool,nScale:Float,numAnti:Bool,rScale:Float,rAnti:Bool,force:Bool)
+	{
+		super();
+		misses = miss;
+		countAsCombo = cac;
+		countScore = cS;
+		showRating = sR;
+		note = n;
+		character = chars[0];
+		characters = chars;
+		player = pl;
+		noteType = nT;
+		animSuffix = suffix;
+		ratingPrefix = rPrefix;
+		ratingSuffix = rSuffix;
+		direction = dir;
+		score = sc;
+		accuracy = acc;
+		healthGain = hGain;
+		rating = rate;
+		showSplash = sS;
+		numScale = nScale;
+		numAntialiasing = numAnti;
+		ratingScale = rScale;
+		ratingAntialiasing = rAnti;
+		forceAnim = force;
+	}
+
 	/**
 	 * Prevents the default sing animation from being played.
 	 */

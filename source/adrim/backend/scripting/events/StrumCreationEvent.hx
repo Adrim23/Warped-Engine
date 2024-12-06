@@ -29,7 +29,24 @@ final class StrumCreationEvent extends CancellableEvent {
 	/**
 	 * Sprite path, in case you only want to change the sprite.
 	 */
-	public var sprite:String = "game/notes/default";
+	public var sprite(default, set):String = "";
+
+	function set_sprite(value:String)
+	{
+		sprite = value;
+		strum.texture = value;
+		return value;
+	}
+
+	public function new(s:StrumNote,pl:Int,id:Int,prefix:String)
+	{
+		super();
+
+		strum = s;
+		player = pl;
+		strumID = id;
+		animPrefix = prefix;
+	}
 
 	/**
 	 * Cancels the animation that makes the strum "land" in the strumline.

@@ -24,13 +24,14 @@ class Script extends FlxBasic implements IFlxDestroyable {
 		return [
 			// Haxe related stuff
 			"Std"			   => Std,
-			"Math"			  => Math,
-			"Reflect"			  => Reflect,
+			"Math"			   => Math,
+			"Reflect"		   => Reflect,
 			"StringTools"	   => StringTools,
 			"FileSystem"	   => FileSystem,
 			"File"	           => File,
 			"Type"	           => Type,
-			"Json"			  => haxe.Json,
+			"Json"			   => haxe.Json,
+			"JsonParser"	   => haxeCustom.format.JsonParser,
 
 			// OpenFL & Lime related stuff
 			"Assets"			=> openfl.utils.Assets,
@@ -49,6 +50,7 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			"FlxSound"		  => flixel.sound.FlxSound,
 			"FlxAssets"		 => flixel.system.FlxAssets,
 			"FlxMath"		   => flixel.math.FlxMath,
+			"lerp"		   => FlxMath.lerp,
 			"FlxGroup"		  => flixel.group.FlxGroup,
 			"FlxTypedGroup"	 => flixel.group.FlxGroup.FlxTypedGroup,
 			"FlxSpriteGroup"	=> flixel.group.FlxSpriteGroup,
@@ -69,6 +71,7 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			"FlxPoint"		  => CoolUtil.getMacroAbstractClass("flixel.math.FlxPoint"),
 			"FlxAxes"		   => CoolUtil.getMacroAbstractClass("flixel.util.FlxAxes"),
 			"FlxColor"		  => CoolUtil.getMacroAbstractClass("flixel.util.FlxColor"),
+			"FlxTrail"		  => adrim.flixel.addons.effects.FlxTrail,
 
 			// Engine related stuff
 			"ModState"		  => adrim.backend.scripting.ModState,
@@ -91,8 +94,8 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			"Options"		   => adrim.backend.options.Options,
 			"Paths"			 => backend.Paths,
 			"Conductor"		 => backend.Conductor,
-			/*"FunkinShader"	  => adrim.backend.shaders.FunkinShader,
-			"CustomShader"	  => adrim.backend.shaders.CustomShader, NO SHADERS!!! (yet...)*/
+			"FunkinShader"	  => adrim.shaders.FunkinShader,
+			"CustomShader"	  => adrim.shaders.CustomShader,
 			"FunkinText"		=> adrim.objects.FunkinText,
 			"FlxAnimate"		=> flxanimate.PsychFlxAnimate,
 			//"FunkinSprite"		=> adrim.objects.FunkinSprite,
@@ -106,7 +109,8 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			//"EngineUtil"		=> funkin.backend.utils.EngineUtil,
 			//"MemoryUtil"		=> funkin.backend.utils.MemoryUtil,
 			//"BitmapUtil"		=> funkin.backend.utils.BitmapUtil, TBD
-			"WindowUtils"		=> adrim.backend.utils.WindowUtils
+			"WindowUtils"		=> adrim.backend.utils.WindowUtils,
+			"StageData"		=> backend.StageData
 		];
 	}
 	public static function getDefaultPreprocessors():Map<String, Dynamic> {
@@ -161,7 +165,7 @@ class Script extends FlxBasic implements IFlxDestroyable {
 				case "hx" | "hscript" | "hsc" | "hxs":
 					new HScriptCodename(path);
 				case "pack":
-					var arr = Assets.getText(path).split("________PACKSEP________");
+					var arr = File.getContent(path).split("________PACKSEP________");
 					fromString(arr[1], arr[0]);
 				case "lua":
 					Logs.trace("Lua is not supported in this engine. Use HScript instead.", ERROR);

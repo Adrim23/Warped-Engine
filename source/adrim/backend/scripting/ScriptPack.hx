@@ -2,6 +2,7 @@ package adrim.backend.scripting;
 
 import flixel.util.FlxStringUtil;
 import adrim.backend.scripting.events.CancellableEvent;
+import backend.Mods;
 
 @:access(CancellableEvent)
 class ScriptPack extends Script {
@@ -23,7 +24,6 @@ class ScriptPack extends Script {
 		return false;
 	}
 	public function new(name:String) {
-		additionalDefaultVariables["importScript"] = importScript;
 		super(name);
 	}
 
@@ -41,7 +41,23 @@ class ScriptPack extends Script {
 		return null;
 	}
 	public function importScript(path:String):Script {
-		var script = Script.create(Paths.script(path));
+		var doesntExist:Bool=true;
+		var extension:String='';
+		path = '${Mods.currentModDirectory}/'+path;
+		for (ext in ["hx", "hscript", "hxs", "hsc"])
+		{
+			if (FileSystem.exists(Paths.modFolders('$path.$ext')))
+			{
+				doesntExist = false;
+				extension = ext;
+			}
+		}
+		if (doesntExist)
+		{
+			throw 'Script at ${path} does not exist.';
+			return null;
+		}
+		var script = Script.create(Paths.modFolders('$path.$extension'));
 		if (script is DummyScript) {
 			throw 'Script at ${path} does not exist.';
 			return null;
@@ -124,6 +140,7 @@ class ScriptPack extends Script {
 		if (parent != null) script.setParent(parent);
 		script.setPublicMap(publicVariables);
 		for(k=>e in additionalDefaultVariables) script.set(k, e);
+		script.set('importScript', importScript);
 	}
 
 	override public function toString():String {
