@@ -4,6 +4,8 @@ import objects.Note;
 import shaders.RGBPalette;
 import flixel.util.FlxDestroyUtil;
 
+import adrim.backend.chart.ChartData.ChartEvent;
+
 class MetaNote extends Note
 {
 	public static var noteTypeTexts:Map<Int, FlxText> = [];
@@ -138,17 +140,30 @@ class MetaNote extends Note
 class EventMetaNote extends MetaNote
 {
 	public var eventText:FlxText;
-	public function new(time:Float, eventData:Dynamic)
+	public var isAdvanced:Bool;
+	public function new(time:Float, eventData:Dynamic, codename:Bool=false, ?advancedData:ChartEvent)
 	{
 		super(time, -1, eventData);
+		isAdvanced = codename;
 		this.isEvent = true;
-		events = eventData[1];
-		//trace('events: $events');
-		
-		loadGraphic(Paths.image('editors/eventIcon'));
-		setGraphicSize(ChartingState.GRID_SIZE);
-		updateHitbox();
-
+		if (!codename)
+		{
+			events = eventData[1];
+			//trace('events: $events');
+			
+			loadGraphic(Paths.image('editors/eventIcon'));
+			setGraphicSize(ChartingState.GRID_SIZE);
+			updateHitbox();
+		}
+        else
+		{
+			eventData = advancedData;
+			//trace('events: $events');
+			
+			loadGraphic(Paths.image('editors/adEventIcon'));
+			setGraphicSize(ChartingState.GRID_SIZE);
+			updateHitbox();
+		}
 		eventText = new FlxText(0, 0, 400, '', 12);
 		eventText.setFormat(Paths.font('vcr.ttf'), 12, FlxColor.WHITE, RIGHT);
 		eventText.scrollFactor.x = 0;
@@ -169,20 +184,26 @@ class EventMetaNote extends MetaNote
 	override function setSustainLength(v:Float, stepCrochet:Float, zoom:Float = 1) {}
 
 	public var events:Array<Array<String>>;
+	public var eventData:ChartEvent;
 	public function updateEventText()
 	{
 		var myTime:Float = Math.floor(this.strumTime);
-		if(events.length == 1)
+		if (!isAdvanced)
 		{
-			var event = events[0];
-			eventText.text = 'Event: ${event[0]} ($myTime ms)\nValue 1: ${event[1]}\nValue 2: ${event[2]}';
+			if(events.length == 1)
+			{
+				var event = events[0];
+				eventText.text = 'Event: ${event[0]} ($myTime ms)\nValue 1: ${event[1]}\nValue 2: ${event[2]}';
+			}
+			else if(events.length > 1)
+			{
+				var eventNames:Array<String> = [for (event in events) event[0]];
+				eventText.text = '${events.length} Events ($myTime ms):\n${eventNames.join(', ')}';
+			}
+			else eventText.text = 'ERROR FAILSAFE';
 		}
-		else if(events.length > 1)
-		{
-			var eventNames:Array<String> = [for (event in events) event[0]];
-			eventText.text = '${events.length} Events ($myTime ms):\n${eventNames.join(', ')}';
-		}
-		else eventText.text = 'ERROR FAILSAFE';
+		else
+			eventText.text = 'Event: ${eventData.name} ($myTime ms)\nNum of parameters: ${eventData.params.length}';
 	}
 
 	override function destroy()

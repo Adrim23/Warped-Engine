@@ -90,6 +90,8 @@ class Character extends FlxSprite
 	public var xml:Access; //Codename Shit
 	public var stringCol:String; //Codename compat property
 
+	public var useAlts:Bool; //for a better management of alt anims
+
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
 	{
 		super(x, y);
@@ -492,6 +494,7 @@ class Character extends FlxSprite
 	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
 		specialAnim = false;
+		if (useAlts && hasAnimation(AnimName+'-alt')) AnimName = AnimName+'-alt';
 		if(!isAnimateAtlas)
 		{
 			animation.play(AnimName, Force, Reversed, Frame);

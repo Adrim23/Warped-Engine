@@ -72,6 +72,8 @@ class Script extends FlxBasic implements IFlxDestroyable {
 			"FlxAxes"		   => CoolUtil.getMacroAbstractClass("flixel.util.FlxAxes"),
 			"FlxColor"		  => CoolUtil.getMacroAbstractClass("flixel.util.FlxColor"),
 			"FlxTrail"		  => adrim.flixel.addons.effects.FlxTrail,
+			"FlxVideo"		  => hxvlc.flixel.FlxVideo,
+			"FlxVideoSprite"		  => hxvlc.flixel.FlxVideoSprite,
 
 			// Engine related stuff
 			"ModState"		  => adrim.backend.scripting.ModState,

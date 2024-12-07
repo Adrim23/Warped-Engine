@@ -1,6 +1,6 @@
 package adrim.backend.scripting.events;
 
-import objetcs.Note;
+import objects.Note;
 
 final class SimpleNoteEvent extends CancellableEvent {
 	/**

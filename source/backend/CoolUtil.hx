@@ -295,4 +295,7 @@ class CoolUtil
 			r--;
 		return r;
 	}
+
+	@:noUsing public static inline function flxeaseFromString(mainEase:String, suffix:String)
+		return Reflect.field(FlxEase, mainEase + (mainEase == "linear" ? "" : suffix));
 }

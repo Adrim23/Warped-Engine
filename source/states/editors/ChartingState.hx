@@ -34,6 +34,9 @@ import objects.HealthIcon;
 import objects.Note;
 import objects.StrumNote;
 
+import adrim.backend.chart.*;
+import adrim.backend.chart.ChartData.ChartEvent;
+
 using DateTools;
 
 typedef UndoStruct = {
@@ -584,6 +587,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			song: 'Test',
 			notes: [],
 			events: [],
+			advancedEvents: [],
 			bpm: 150,
 			needsVoices: true,
 			speed: 1,
@@ -1360,17 +1364,37 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							trace('Added event at time: $strumTime');
 							var didAdd:Bool = false;
 
-							var eventAdded:EventMetaNote = createEvent([strumTime, [[eventsList[Std.int(Math.max(eventDropDown.selectedIndex, 0))][0], value1InputText.text, value2InputText.text]]]);
-							for (num in sectionFirstEventID...events.length)
+							var eventAdded:EventMetaNote;
+
+							if (!FlxG.keys.pressed.C)
 							{
-								var event = events[num];
-								if(event.strumTime >= strumTime)
+								eventAdded = createEvent([strumTime, [[eventsList[Std.int(Math.max(eventDropDown.selectedIndex, 0))][0], value1InputText.text, value2InputText.text]]]);
+								for (num in sectionFirstEventID...events.length)
 								{
-									events.insert(num, eventAdded);
-									didAdd = true;
-									break;
+									var event = events[num];
+									if(event.strumTime >= strumTime)
+									{
+										events.insert(num, eventAdded);
+										didAdd = true;
+										break;
+									}
 								}
 							}
+							else
+							{
+								eventAdded = createAdvancedEvent({name:'Test',time:strumTime,params:[1]});
+								for (num in sectionFirstEventID...events.length)
+								{
+									var event = events[num];
+									if(event.strumTime >= strumTime)
+									{
+										events.insert(num, eventAdded);
+										didAdd = true;
+										break;
+									}
+								}
+							}
+
 							if(!didAdd) events.push(eventAdded);
 
 							if(!holdingAlt)
@@ -1954,6 +1978,25 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var daStrumTime:Float = event[0];
 		var swagEvent:EventMetaNote = new EventMetaNote(daStrumTime, event);
+		swagEvent.x = gridBg.x;
+		swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
+		swagEvent.scrollFactor.x = 0;
+		swagEvent.active = false;
+
+		var secNum:Int = 0;
+		for (i in 1...cachedSectionTimes.length)
+		{
+			if(cachedSectionTimes[i] > daStrumTime) break;
+			secNum++;
+		}
+		positionNoteYOnTime(swagEvent, secNum);
+		return swagEvent;
+	}
+	
+	function createAdvancedEvent(event:ChartEvent)
+	{
+		var daStrumTime:Float = event.time;
+		var swagEvent:EventMetaNote = new EventMetaNote(daStrumTime, null, true, event);
 		swagEvent.x = gridBg.x;
 		swagEvent.eventText.x = swagEvent.x - swagEvent.eventText.width - 10;
 		swagEvent.scrollFactor.x = 0;

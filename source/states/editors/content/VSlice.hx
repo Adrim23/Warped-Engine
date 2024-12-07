@@ -251,6 +251,7 @@ class VSlice
 				song: metadata.songName,
 				notes: sectionData,
 				events: [],
+				advancedEvents: [],
 				bpm: songBpm,
 				needsVoices: true, //There's no value on V-Slice to identify if there are vocals as it checks automatically
 				speed: scrollSpeed,

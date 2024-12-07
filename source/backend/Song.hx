@@ -5,6 +5,7 @@ import lime.utils.Assets;
 
 import objects.Note;
 import adrim.backend.chart.*;
+import adrim.backend.chart.ChartData.ChartEvent;
 import adrim.backend.assets.JsonParserCN;
 
 typedef SwagSong =
@@ -12,6 +13,7 @@ typedef SwagSong =
 	var song:String;
 	var notes:Array<SwagSection>;
 	var events:Array<Dynamic>;
+	var advancedEvents:Array<ChartEvent>;
 	var bpm:Float;
 	var needsVoices:Bool;
 	var speed:Float;
@@ -50,6 +52,7 @@ class Song
 	public var song:String;
 	public var notes:Array<SwagSection>;
 	public var events:Array<Dynamic>;
+	public var advancedEvents:Array<ChartEvent>;
 	public var bpm:Float;
 	public var needsVoices:Bool = true;
 	public var arrowSkin:String;
