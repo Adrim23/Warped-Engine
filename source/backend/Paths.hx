@@ -19,8 +19,8 @@ import flash.media.Sound;
 
 import haxe.Json;
 
-import adrim.backend.assets.AssetsLibraryList;
-import adrim.backend.scripting.Script;
+import warped.backend.assets.AssetsLibraryList;
+import warped.backend.scripting.Script;
 
 #if MODS_ALLOWED
 import backend.Mods;
@@ -152,6 +152,9 @@ class Paths
 
 	inline static public function lua(key:String, ?folder:String)
 		return getPath('$key.lua', TEXT, folder, true);
+
+	inline static public function animateAtlas(path:String,lib:String = "preload")
+        return getPath("images/"+path);
 
 	static public function video(key:String)
 	{
@@ -338,7 +341,6 @@ class Paths
 
 	inline static public function getSparrowAtlas(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
 	{
-		if(key.contains('psychic')) trace(key, parentFolder, allowGPU);
 		var imageLoaded:FlxGraphic = image(key, parentFolder, allowGPU);
 		#if MODS_ALLOWED
 		var xmlExists:Bool = false;
@@ -465,73 +467,73 @@ class Paths
 
 	#if flxanimate
 	public static function loadAnimateAtlas(spr:FlxAnimate, folderOrImg:Dynamic, spriteJson:Dynamic = null, animationJson:Dynamic = null)
-	{
-		var changedAnimJson = false;
-		var changedAtlasJson = false;
-		var changedImage = false;
-		
-		if(spriteJson != null)
 		{
-			changedAtlasJson = true;
-			spriteJson = File.getContent(spriteJson);
-		}
-
-		if(animationJson != null) 
-		{
-			changedAnimJson = true;
-			animationJson = File.getContent(animationJson);
-		}
-
-		// is folder or image path
-		if(Std.isOfType(folderOrImg, String))
-		{
-			var originalPath:String = folderOrImg;
-			for (i in 0...10)
+			var changedAnimJson = false;
+			var changedAtlasJson = false;
+			var changedImage = false;
+			
+			if(spriteJson != null)
 			{
-				var st:String = '$i';
-				if(i == 0) st = '';
-
-				if(!changedAtlasJson)
+				changedAtlasJson = true;
+				spriteJson = File.getContent(spriteJson);
+			}
+	
+			if(animationJson != null) 
+			{
+				changedAnimJson = true;
+				animationJson = File.getContent(animationJson);
+			}
+	
+			// is folder or image path
+			if(Std.isOfType(folderOrImg, String))
+			{
+				var originalPath:String = folderOrImg;
+				for (i in 0...10)
 				{
-					spriteJson = getTextFromFile('images/$originalPath/spritemap$st.json');
-					if(spriteJson != null)
+					var st:String = '$i';
+					if(i == 0) st = '';
+	
+					if(!changedAtlasJson)
 					{
-						//trace('found Sprite Json');
+						spriteJson = getTextFromFile('images/$originalPath/spritemap$st.json');
+						if(spriteJson != null)
+						{
+							//trace('found Sprite Json');
+							changedImage = true;
+							changedAtlasJson = true;
+							folderOrImg = image('$originalPath/spritemap$st');
+							break;
+						}
+					}
+					else if(fileExists('images/$originalPath/spritemap$st.png', IMAGE))
+					{
+						//trace('found Sprite PNG');
 						changedImage = true;
-						changedAtlasJson = true;
 						folderOrImg = image('$originalPath/spritemap$st');
 						break;
 					}
 				}
-				else if(fileExists('images/$originalPath/spritemap$st.png', IMAGE))
+	
+				if(!changedImage)
 				{
-					//trace('found Sprite PNG');
+					//trace('Changing folderOrImg to FlxGraphic');
 					changedImage = true;
-					folderOrImg = image('$originalPath/spritemap$st');
-					break;
+					folderOrImg = image(originalPath);
+				}
+	
+				if(!changedAnimJson)
+				{
+					//trace('found Animation Json');
+					changedAnimJson = true;
+					animationJson = getTextFromFile('images/$originalPath/Animation.json');
 				}
 			}
-
-			if(!changedImage)
-			{
-				//trace('Changing folderOrImg to FlxGraphic');
-				changedImage = true;
-				folderOrImg = image(originalPath);
-			}
-
-			if(!changedAnimJson)
-			{
-				//trace('found Animation Json');
-				changedAnimJson = true;
-				animationJson = getTextFromFile('images/$originalPath/Animation.json');
-			}
+	
+			//trace(folderOrImg);
+			//trace(spriteJson);
+			//trace(animationJson);
+			spr.loadAtlasEx(folderOrImg, spriteJson, animationJson);
 		}
-
-		//trace(folderOrImg);
-		//trace(spriteJson);
-		//trace(animationJson);
-		spr.loadAtlasEx(folderOrImg, spriteJson, animationJson);
-	}
 	#end
 
 	//Codename
@@ -558,7 +560,17 @@ class Paths
 	}
 
 	public static function getFrames(key:String, assetsPath:Bool = false, ?library:String) {
-		return getSparrowAtlas(key, library, true);
+		var imageLoaded:FlxGraphic = image(key, null, true);
+		#if MODS_ALLOWED
+		var xmlExists:Bool = false;
+
+		var xml:String = modsXml(key);
+		if(FileSystem.exists(xml)) xmlExists = true;
+
+		return FlxAtlasFrames.fromSparrow(imageLoaded, (xmlExists ? File.getContent(xml) : getPath('images/$key' + '.xml', TEXT, null)));
+		#else
+		return FlxAtlasFrames.fromSparrow(imageLoaded, getPath('images/$key' + '.xml', TEXT, null));
+		#end
 	}
 
 	// Used in Script.hx

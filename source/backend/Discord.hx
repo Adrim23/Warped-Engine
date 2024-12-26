@@ -8,7 +8,7 @@ import Sys;
 import lime.app.Application;
 import flixel.util.typeLimit.OneOfTwo;
 import openfl.display.BitmapData;
-import adrim.backend.HttpUtil;
+import warped.backend.HttpUtil;
 
 class DiscordClient
 {

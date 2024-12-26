@@ -15,7 +15,7 @@ import haxe.xml.Access;
 import backend.Song;
 import backend.Conductor;
 import states.stages.objects.TankmenBG;
-import adrim.backend.XMLHelper;
+import warped.backend.XMLHelper;
 
 typedef CharacterFile = {
 	var animations:Array<AnimArray>;
@@ -91,6 +91,7 @@ class Character extends FlxSprite
 	public var stringCol:String; //Codename compat property
 
 	public var useAlts:Bool; //for a better management of alt anims
+	public var playerOffsets:Bool = false;
 
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
 	{
@@ -347,6 +348,28 @@ class Character extends FlxSprite
 	public static var characterAnimProperties:Array<String> = [
 		"name", "anim", "x", "y", "fps", "loop", "indices"
 	];
+
+	public function isFlippedOffsets()
+		return (isPlayer != playerOffsets) != (flipX != __baseFlipped);
+
+	@:noCompletion var __reverseTrailProcedure:Bool = false;
+	@:noCompletion var __baseFlipped:Bool = false;
+
+	// When using trails on characters you should do `trail.beforeCache = char.beforeTrailCache;`
+	public dynamic function beforeTrailCache()
+		if (isFlippedOffsets()) {
+			flipX = !flipX;
+			scale.x *= -1;
+			__reverseTrailProcedure = true;
+		}
+
+	// When using trails on characters you should do `trail.afterCache = char.afterTrailCache;`
+	public dynamic function afterTrailCache()
+		if (__reverseTrailProcedure) {
+			flipX = !flipX;
+			scale.x *= -1;
+			__reverseTrailProcedure = false;
+		}
 
 	override function update(elapsed:Float)
 	{

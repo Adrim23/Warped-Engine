@@ -47,6 +47,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	var curAnim = 0;
 
 	private var camEditor:FlxCamera;
+	private var camChar:FlxCamera;
 	private var camHUD:FlxCamera;
 
 	var UI_box:PsychUIBox;
@@ -72,6 +73,10 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		FlxG.sound.music.stop();
 		camEditor = initPsychCamera();
+
+		camChar = new FlxCamera();
+		camChar.bgColor.alpha = 0;
+		FlxG.cameras.add(camChar, true);
 
 		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
@@ -229,6 +234,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		var isPlayer = (reload ? character.isPlayer : !predictCharacterIsNotPlayer(_char));
 		character = new Character(0, 0, _char, isPlayer);
+		character.camera = camChar;
 		if(!reload && character.editorIsPlayer != null && isPlayer != character.editorIsPlayer)
 		{
 			character.isPlayer = !character.isPlayer;
@@ -880,23 +886,23 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if(FlxG.keys.pressed.CONTROL) ctrlMult = 0.25;
 
 		// CAMERA CONTROLS
-		if (FlxG.keys.pressed.J) FlxG.camera.scroll.x -= elapsed * 500 * shiftMult * ctrlMult;
-		if (FlxG.keys.pressed.K) FlxG.camera.scroll.y += elapsed * 500 * shiftMult * ctrlMult;
-		if (FlxG.keys.pressed.L) FlxG.camera.scroll.x += elapsed * 500 * shiftMult * ctrlMult;
-		if (FlxG.keys.pressed.I) FlxG.camera.scroll.y -= elapsed * 500 * shiftMult * ctrlMult;
+		if (FlxG.keys.pressed.J) camChar.scroll.x -= elapsed * 500 * shiftMult * ctrlMult;
+		if (FlxG.keys.pressed.K) camChar.scroll.y += elapsed * 500 * shiftMult * ctrlMult;
+		if (FlxG.keys.pressed.L) camChar.scroll.x += elapsed * 500 * shiftMult * ctrlMult;
+		if (FlxG.keys.pressed.I) camChar.scroll.y -= elapsed * 500 * shiftMult * ctrlMult;
 
-		var lastZoom = FlxG.camera.zoom;
-		if(FlxG.keys.justPressed.R && !FlxG.keys.pressed.CONTROL) FlxG.camera.zoom = 1;
-		else if (FlxG.keys.pressed.E && FlxG.camera.zoom < 3) {
-			FlxG.camera.zoom += elapsed * FlxG.camera.zoom * shiftMult * ctrlMult;
-			if(FlxG.camera.zoom > 3) FlxG.camera.zoom = 3;
+		var lastZoom = camChar.zoom;
+		if(FlxG.keys.justPressed.R && !FlxG.keys.pressed.CONTROL) camChar.zoom = 1;
+		else if (FlxG.keys.pressed.E && camChar.zoom < 3) {
+			camChar.zoom += elapsed * camChar.zoom * shiftMult * ctrlMult;
+			if(camChar.zoom > 3) camChar.zoom = 3;
 		}
-		else if (FlxG.keys.pressed.Q && FlxG.camera.zoom > 0.1) {
-			FlxG.camera.zoom -= elapsed * FlxG.camera.zoom * shiftMult * ctrlMult;
-			if(FlxG.camera.zoom < 0.1) FlxG.camera.zoom = 0.1;
+		else if (FlxG.keys.pressed.Q && camChar.zoom > 0.1) {
+			camChar.zoom -= elapsed * camChar.zoom * shiftMult * ctrlMult;
+			if(camChar.zoom < 0.1) camChar.zoom = 0.1;
 		}
 
-		if(lastZoom != FlxG.camera.zoom) cameraZoomText.text = 'Zoom: ' + FlxMath.roundDecimal(FlxG.camera.zoom, 2) + 'x';
+		if(lastZoom != camChar.zoom) cameraZoomText.text = 'Zoom: ' + FlxMath.roundDecimal(camChar.zoom, 2) + 'x';
 
 		// CHARACTER CONTROLS
 		var changedAnim:Bool = false;
@@ -1077,17 +1083,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		/////////////
 		// bg data //
 		/////////////
-		#if !BASE_GAME_FILES
 		camEditor.bgColor = 0xFF666666;
-		#else
-		var bg:BGSprite = new BGSprite('stageback', -600, -200, 0.9, 0.9);
-		add(bg);
-
-		var stageFront:BGSprite = new BGSprite('stagefront', -650, 600, 0.9, 0.9);
-		stageFront.setGraphicSize(Std.int(stageFront.width * 1.1));
-		stageFront.updateHitbox();
-		add(stageFront);
-		#end
 
 		dadPosition.set(100, 100);
 		bfPosition.set(770, 100);

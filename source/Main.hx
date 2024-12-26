@@ -55,6 +55,7 @@ class Main extends Sprite
 	};
 
 	public static var fpsVar:FPSCounter;
+	public static var fpsVarReal:FPSCounter;
 	public static var audioDisconnected:Bool=false;
 
 	// You can pretty much ignore everything from here on - your code should go in your states.
@@ -129,11 +130,15 @@ class Main extends Sprite
 
 		#if !mobile
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);
-		addChild(fpsVar);
+		fpsVarReal = new FPSCounter(10, 3, 0xFFFFFF);
+		addChild(fpsVarReal);
+		addChild(fpsVarReal.framerateText);
+		addChild(fpsVarReal.fpsText);
+		addChild(fpsVarReal.daOtherShit);
 		Lib.current.stage.align = "tl";
 		Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
-		if(fpsVar != null) {
-			fpsVar.visible = ClientPrefs.data.showFPS;
+		if(fpsVarReal != null) {
+			fpsVarReal.visible = ClientPrefs.data.showFPS;
 		}
 		#end
 

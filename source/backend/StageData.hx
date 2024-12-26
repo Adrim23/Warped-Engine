@@ -9,7 +9,7 @@ import haxe.Exception;
 import haxe.io.Path;
 import haxe.xml.Access;
 
-import adrim.backend.XMLHelper;
+import warped.backend.XMLHelper;
 
 typedef StageFile = {
 	var directory:String;

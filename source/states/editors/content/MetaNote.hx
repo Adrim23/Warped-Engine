@@ -4,7 +4,7 @@ import objects.Note;
 import shaders.RGBPalette;
 import flixel.util.FlxDestroyUtil;
 
-import adrim.backend.chart.ChartData.ChartEvent;
+import warped.backend.chart.ChartData.ChartEvent;
 
 class MetaNote extends Note
 {

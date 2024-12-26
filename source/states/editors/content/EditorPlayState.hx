@@ -7,6 +7,7 @@ import backend.Conductor;
 import objects.Note;
 import objects.NoteSplash;
 import objects.StrumNote;
+import warped.objects.StrumLine;
 
 import flixel.util.FlxSort;
 import flixel.util.FlxStringUtil;
@@ -641,7 +642,7 @@ class EditorPlayState extends MusicBeatSubstate
 	private function onKeyPress(event:KeyboardEvent):Void
 	{
 		var eventKey:FlxKey = event.keyCode;
-		var key:Int = PlayState.getKeyFromEvent(keysArray, eventKey);
+		var key:Int = StrumLine.getKeyFromEvent(keysArray, eventKey);
 		//trace('Pressed: ' + eventKey);
 
 		if (!controls.controllerMode)
@@ -708,7 +709,7 @@ class EditorPlayState extends MusicBeatSubstate
 	private function onKeyRelease(event:KeyboardEvent):Void
 	{
 		var eventKey:FlxKey = event.keyCode;
-		var key:Int = PlayState.getKeyFromEvent(keysArray, eventKey);
+		var key:Int = StrumLine.getKeyFromEvent(keysArray, eventKey);
 		//trace('Pressed: ' + eventKey);
 
 		if(!controls.controllerMode && key > -1) keyReleased(key);

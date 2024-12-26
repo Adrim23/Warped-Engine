@@ -34,8 +34,8 @@ import objects.HealthIcon;
 import objects.Note;
 import objects.StrumNote;
 
-import adrim.backend.chart.*;
-import adrim.backend.chart.ChartData.ChartEvent;
+import warped.backend.chart.*;
+import warped.backend.chart.ChartData.ChartEvent;
 
 using DateTools;
 

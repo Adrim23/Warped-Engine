@@ -8,7 +8,7 @@ import flxanimate.FlxAnimate as OriginalFlxAnimate;
 
 class PsychFlxAnimate extends OriginalFlxAnimate
 {
-	override public function loadAtlasEx(img:FlxGraphicAsset, pathOrStr:String = null, myJson:Dynamic = null)
+	public function loadAtlasEx(img:FlxGraphicAsset, pathOrStr:String = null, myJson:Dynamic = null)
 	{
 		var animJson:AnimAtlas = null;
 		if(myJson is String)
@@ -62,7 +62,7 @@ class PsychFlxAnimate extends OriginalFlxAnimate
 		}
 
 		anim._loadAtlas(animJson);
-		if(!isXml) frames = null;
+		if(!isXml) frames = FlxAnimateFrames.fromSpriteMap(cast myData, img);
 		else frames = FlxAnimateFrames.fromSparrow(cast myData, img);
 		origin = anim.curInstance.symbol.transformationPoint;
 	}
@@ -81,15 +81,15 @@ class PsychFlxAnimate extends OriginalFlxAnimate
 		}
 		catch(e:haxe.Exception)
 		{
-			anim.curInstance = null;
-			anim.stageInstance = null;
+			anim.curInstance = FlxDestroyUtil.destroy(anim.curInstance);
+			anim.stageInstance = FlxDestroyUtil.destroy(anim.stageInstance);
 			//anim.metadata = FlxDestroyUtil.destroy(anim.metadata);
 			anim.metadata.destroy();
 			anim.symbolDictionary = null;
 		}
 	}
 
-	override function _removeBOM(str:String) //Removes BOM byte order indicator
+	function _removeBOM(str:String) //Removes BOM byte order indicator
 	{
 		if (str.charCodeAt(0) == 0xFEFF) str = str.substr(1); //myData = myData.substr(2);
 		return str;

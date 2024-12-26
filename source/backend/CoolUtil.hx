@@ -262,7 +262,7 @@ class CoolUtil
 		} catch(e) {
 			var errMsg:String = 'Error while trying to save the file: ${Std.string(e).replace('\n', ' ')}';
 			Logs.traceColored([Logs.logText(errMsg, RED)], ERROR);
-			if(showErrorBox) adrim.backend.utils.NativeAPI.showMessageBox("Codename Engine Warning", errMsg, MSG_WARNING);
+			if(showErrorBox) warped.backend.utils.NativeAPI.showMessageBox("Codename Engine Warning", errMsg, MSG_WARNING);
 		}
 		#end
 	 }

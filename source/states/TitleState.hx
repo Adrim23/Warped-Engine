@@ -18,7 +18,13 @@ import shaders.ColorSwap;
 import states.StoryMenuState;
 import states.OutdatedState;
 import states.MainMenuState;
+import states.FreeplayState;
 import backend.Conductor;
+import warped.backend.freeplay.FreeplayData.PlayerData;
+import warped.backend.freeplay.FreeplayData.PlayerFreeplayDJData;
+import warped.backend.freeplay.DJCharacter;
+
+using warped.backend.utils.FunkinTools;
 
 typedef TitleData =
 {
@@ -80,6 +86,16 @@ class TitleState extends MusicBeatState
 		{
 			ClientPrefs.loadPrefs();
 			Language.reloadPhrases();
+		}
+
+		if (FreeplayState.pChar == null) 
+		{
+			var player_blob:Dynamic = Json.parse(File.getContent('assets/shared/images/bf.json'));// new PlayerData();
+            if(player_blob == null) return;
+            var player_data = new PlayerData().mergeWithJson(player_blob,["freeplayDJ"]);
+            var dj = new PlayerFreeplayDJData().mergeWithJson(player_blob.freeplayDJ);
+            player_data.freeplayDJ = dj;
+            FreeplayState.pChar = new DJCharacter(player_data);
 		}
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());

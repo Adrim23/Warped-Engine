@@ -32,7 +32,9 @@ class StrumNote extends FlxSprite
 	}
 
 	public var useRGBShader:Bool = true;
+	var oldX:Float;
 	public function new(x:Float, y:Float, leData:Int, player:Int) {
+		oldX = x;
 		animation = new PsychAnimationController(this);
 
 		rgbShader = new RGBShaderReference(this, Note.initializeGlobalRGBShader(leData));
@@ -151,14 +153,16 @@ class StrumNote extends FlxSprite
 
 	public function playerPosition()
 	{
-		x += Note.swagWidth * noteData;
+		x = oldX;
+		x += (160 * size) * noteData;
 		x += 50;
 		x += ((FlxG.width / 2) * player);
 	}
 
 	public function setStrumPos()
 	{
-		x += Note.swagWidth * noteData;
+		x = oldX;
+		x += (160 * size) * noteData;
 		x += 50;
 	}
 

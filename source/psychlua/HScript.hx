@@ -131,7 +131,7 @@ class HScript extends SScript
 		set('Character', Character);
 		set('Alphabet', Alphabet);
 		set('Note', objects.Note);
-		set('StrumLine', adrim.objects.StrumLine);
+		set('StrumLine', warped.objects.StrumLine);
 		set('CustomSubstate', CustomSubstate);
 		#if (!flash && sys)
 		set('FlxRuntimeShader', flixel.addons.display.FlxRuntimeShader);
@@ -142,9 +142,9 @@ class HScript extends SScript
 		set('FlxAnimate', FlxAnimate);
 		#end
 		set('CoolUtil', backend.CoolUtil);
-		set('ExUtils', adrim.backend.ExUtils);
-		set('PsychVideoSprite', adrim.objects.PsychVideoSprite);
-		set('HttpUtil', adrim.backend.HttpUtil);
+		set('ExUtils', warped.backend.ExUtils);
+		set('PsychVideoSprite', warped.objects.PsychVideoSprite);
+		set('HttpUtil', warped.backend.HttpUtil);
 		set('BlendMode',{
 			SUBTRACT: BlendMode.SUBTRACT,
 			ADD: BlendMode.ADD,

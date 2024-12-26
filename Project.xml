@@ -2,7 +2,7 @@
 <project>
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Friday Night Funkin': Adrim24 PE" file="Adrim24PE" packageName="com.adrim24.adrim24PE" package="com.adrim24.adrim24PE" main="Main" version="0.2.8" company="Adrim24" />
+	<app title="Friday Night Funkin': Warped Engine" file="WarpedEngine" packageName="com.adrim24.warpedengine" package="com.adrim24.warpedengine" main="Main" version="0.2.8" company="Adrim24" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />

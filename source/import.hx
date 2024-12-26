@@ -65,5 +65,5 @@ import flixel.addons.transition.FlxTransitionableState;
 using StringTools;
 #end
 
-import adrim.backend.system.Logs;
-import adrim.backend.scripting.events.*;
+import warped.backend.system.Logs;
+import warped.backend.scripting.events.*;

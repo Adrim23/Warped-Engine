@@ -8,6 +8,7 @@ import shaders.RGBPalette;
 import shaders.RGBPalette.RGBShaderReference;
 
 import objects.StrumNote;
+import warped.objects.StrumLine;
 
 import flixel.math.FlxRect;
 
@@ -115,6 +116,7 @@ class Note extends FlxSprite
 	public var copyY:Bool = true;
 	public var copyAngle:Bool = true;
 	public var copyAlpha:Bool = true;
+	public var copyVisible:Bool = true;
 
 	public var hitHealth:Float = 0.02;
 	public var missHealth:Float = 0.1;
@@ -142,15 +144,27 @@ class Note extends FlxSprite
 		return hitsoundForce ? hitsoundVolume : 0.0;
 	}
 	public var hitsound:String = 'hitsound';
-
-	public var followStrum:Bool = true; //If true, follows dad's or bf's strums. Disable it for custom strumline shit
-	
+	public var strumline:StrumLine; //What strumline does it follow?
 	public var avoid(default, set):Bool = false; //Same as ignoreNote but for codename
+	public var size(default, set):Float = 0.7; //The size for this note, i don't recommend tweaking it too much
+	public var splash:String = null; //Codename Splash, set this to something else than null to activate it
+
+	@:dox(hide) public var __strumCameras:Array<FlxCamera> = null;
+	@:dox(hide) public var __strum:StrumNote = null;
+	@:dox(hide) public var __noteAngle:Float = 0;
 
 	function set_avoid(value:Bool)
 	{
 		avoid = value;
 		ignoreNote = value;
+		return value;
+	}
+	
+	function set_size(value:Float)
+	{
+		if (size == value) return size;
+		size = value;
+		loadNoteAnims();
 		return value;
 	}
 
@@ -270,7 +284,7 @@ class Note extends FlxSprite
 			if(PlayState.SONG != null && PlayState.SONG.disableNoteRGB) rgbShader.enabled = false;
 			texture = '';
 
-			x += swagWidth * (noteData);
+			x += (160*size) * (noteData);
 			if(!isSustainNote && noteData < colArray.length) { //Doing this 'if' check to fix the warnings on Senpai songs
 				var animToPlay:String = '';
 				animToPlay = colArray[noteData % colArray.length];
@@ -448,7 +462,7 @@ class Note extends FlxSprite
 		}
 		else animation.addByPrefix(colArray[noteData] + 'Scroll', colArray[noteData] + '0');
 
-		setGraphicSize(Std.int(width * 0.7));
+		setGraphicSize(Std.int(width * size));
 		updateHitbox();
 	}
 
@@ -477,7 +491,12 @@ class Note extends FlxSprite
 	{
 		super.update(elapsed);
 
-		if (mustPress)
+		if (strumline != null){
+			__strum = strumline.members[noteData];
+			__strumCameras = strumline.cameras;
+		} 
+
+		if (strumline.isPlayer)
 		{
 			canBeHit = (strumTime > Conductor.songPosition - (Conductor.safeZoneOffset * lateHitMult) &&
 						strumTime < Conductor.songPosition + (Conductor.safeZoneOffset * earlyHitMult));
@@ -526,6 +545,9 @@ class Note extends FlxSprite
 
 		if(copyAlpha)
 			alpha = strumAlpha * multAlpha;
+		
+		if(copyVisible)	
+		    visible = myStrum.visible;
 
 		if(copyX)
 			x = strumX + offsetX + Math.cos(angleDir) * distance;
@@ -539,15 +561,15 @@ class Note extends FlxSprite
 				{
 					y -= PlayState.daPixelZoom * 9.5;
 				}
-				y -= (frameHeight * scale.y) - (Note.swagWidth / 2);
+				y -= (frameHeight * scale.y) - ((160*size) / 2);
 			}
 		}
 	}
 
 	public function clipToStrumNote(myStrum:StrumNote)
 	{
-		var center:Float = myStrum.y + offsetY + Note.swagWidth / 2;
-		if((mustPress || !ignoreNote) && (wasGoodHit || (prevNote.wasGoodHit && !canBeHit)))
+		var center:Float = myStrum.y + offsetY + (160*size) / 2;
+		if(!ignoreNote && (wasGoodHit || (prevNote.wasGoodHit && !canBeHit)))
 		{
 			var swagRect:FlxRect = clipRect;
 			if(swagRect == null) swagRect = new FlxRect(0, 0, frameWidth, frameHeight);

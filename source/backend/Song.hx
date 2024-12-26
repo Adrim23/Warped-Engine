@@ -4,9 +4,9 @@ import haxe.Json;
 import lime.utils.Assets;
 
 import objects.Note;
-import adrim.backend.chart.*;
-import adrim.backend.chart.ChartData.ChartEvent;
-import adrim.backend.assets.JsonParserCN;
+import warped.backend.chart.*;
+import warped.backend.chart.ChartData.ChartEvent;
+import warped.backend.assets.JsonParserCN;
 
 typedef SwagSong =
 {
