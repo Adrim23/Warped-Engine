@@ -144,7 +144,8 @@ class Song
 		
 		var formattedFolder:String = Paths.formatToSongPath(folder);
 		var formattedSong:String = Paths.formatToSongPath(jsonInput);
-		_lastPath = Paths.json('$formattedFolder/$formattedSong');
+		//_lastPath = Paths.chart(formattedSong, formattedFolder);
+		_lastPath = Paths.chartData(formattedSong,formattedFolder);
 
 		#if MODS_ALLOWED
 		if(FileSystem.exists(_lastPath))
@@ -155,7 +156,6 @@ class Song
 
 		//Intercepting the chart process to check codename shit
 		//if (!StringTools.startsWith(jsonInput, folder)) rawData = convertCodename(folder, jsonInput);
-        if (rawData == null) rawData = File.getContent(Paths.json('$formattedFolder/charts/$formattedSong'));
 		return rawData != null ? parseJSON(rawData, jsonInput, 'psych_v1') : null;
 	}
 

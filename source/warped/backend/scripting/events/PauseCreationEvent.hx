@@ -13,4 +13,11 @@ final class PauseCreationEvent extends CancellableEvent {
 	 * All option names
 	 */
 	public var options:Array<String>;
+
+	public function new(m:String, op:Array<String>)
+	{
+		super();
+		music = m;
+		options = op;
+	}
 }

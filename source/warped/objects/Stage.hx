@@ -7,4 +7,5 @@ class Stage extends FlxSpriteGroup
 {
     public var stageSprites:Map<String, FlxSprite> = [];
     public var stageXML:Access = null;
+    public function getSprite(name:String){return stageSprites.get(name);}
 }

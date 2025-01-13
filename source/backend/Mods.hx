@@ -7,7 +7,9 @@ import haxe.Json;
 typedef ModsList = {
 	enabled:Array<String>,
 	disabled:Array<String>,
-	all:Array<String>
+	all:Array<String>,
+	isEnabled:Array<Bool>,
+	content:Array<Bool>
 };
 
 class Mods
@@ -47,17 +49,56 @@ class Mods
 		return globalMods;
 	}
 
-	inline public static function getModDirectories():Array<String>
+	inline public static function getModDirectories(both:Bool=true,content:Bool=false):Array<String>
 	{
 		var list:Array<String> = [];
 		#if MODS_ALLOWED
-		var modsFolder:String = Paths.mods();
-		if(FileSystem.exists(modsFolder)) {
-			for (folder in FileSystem.readDirectory(modsFolder))
+		if (both)
+		{
+			var modsFolder:String = Paths.mods();
+			if(FileSystem.exists(modsFolder)) {
+				for (folder in FileSystem.readDirectory(modsFolder))
+				{
+					var path = haxe.io.Path.join([modsFolder, folder]);
+					if (FileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
+						list.push(folder);
+				}
+			}
+			var contentFolder:String = Paths.content();
+			if(FileSystem.exists(contentFolder)) {
+				for (folder in FileSystem.readDirectory(contentFolder))
+				{
+					var path = haxe.io.Path.join([contentFolder, folder]);
+					if (FileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
+						list.push(folder);
+				}
+			}
+		}
+        else
+		{
+			if (!content)
 			{
-				var path = haxe.io.Path.join([modsFolder, folder]);
-				if (FileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
-					list.push(folder);
+				var modsFolder:String = Paths.mods();
+				if(FileSystem.exists(modsFolder)) {
+					for (folder in FileSystem.readDirectory(modsFolder))
+					{
+						var path = haxe.io.Path.join([modsFolder, folder]);
+						if (FileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
+							list.push(folder);
+					}
+				}
+			}
+            else
+			{
+				var contentFolder:String = Paths.content();
+				if(FileSystem.exists(contentFolder)) {
+					for (folder in FileSystem.readDirectory(contentFolder))
+					{
+						var path = haxe.io.Path.join([contentFolder, folder]);
+						if (FileSystem.isDirectory(path) && !ignoreModFolders.contains(folder.toLowerCase()) && !list.contains(folder))
+							list.push(folder);
+					}
+				}
 			}
 		}
 		#end
@@ -123,6 +164,8 @@ class Mods
 			{
 				var folder:String = Paths.mods(Mods.currentModDirectory + '/' + fileToFind);
 				if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(folder);
+				var folderC:String = Paths.content(Mods.currentModDirectory + '/' + fileToFind);
+				if(FileSystem.exists(folderC) && !foldersToCheck.contains(folderC)) foldersToCheck.push(folderC);
 			}
 		}
 		#end
@@ -135,6 +178,7 @@ class Mods
 		if(folder == null) folder = Mods.currentModDirectory;
 
 		var path = Paths.mods(folder + '/pack.json');
+		if(!FileSystem.exists(path)) path = Paths.content(folder + '/pack.json');
 		if(FileSystem.exists(path)) {
 			try {
 				#if sys
@@ -154,7 +198,7 @@ class Mods
 	public static var updatedOnState:Bool = false;
 	inline public static function parseList():ModsList {
 		if(!updatedOnState) updateModList();
-		var list:ModsList = {enabled: [], disabled: [], all: []};
+		var list:ModsList = {enabled: [], disabled: [], all: [], isEnabled: [], content: []};
 
 		#if MODS_ALLOWED
 		try {
@@ -169,6 +213,26 @@ class Mods
 					list.enabled.push(dat[0]);
 				else
 					list.disabled.push(dat[0]);
+
+				list.isEnabled.push(dat[1] == "1");
+				list.content.push(false);
+			}
+			{
+				for (mod in CoolUtil.coolTextFile('contentsList.txt'))
+					{
+						//trace('Mod: $mod');
+						if(mod.trim().length < 1) continue;
+		
+						var dat = mod.split("|");
+						list.all.push(dat[0]);
+						if (dat[1] == "1")
+							list.enabled.push(dat[0]);
+						else
+							list.disabled.push(dat[0]);
+						
+						list.isEnabled.push(dat[1] == "1");
+						list.content.push(true);
+					}
 			}
 		} catch(e) {
 			trace(e);
@@ -177,13 +241,14 @@ class Mods
 		return list;
 	}
 	
-	private static function updateModList()
+	private static function updateModList(content:Bool=false)
 	{
 		#if MODS_ALLOWED
 		// Find all that are already ordered
 		var list:Array<Array<Dynamic>> = [];
 		var added:Array<String> = [];
 		try {
+			if (!content)
 			for (mod in CoolUtil.coolTextFile('modsList.txt'))
 			{
 				var dat:Array<String> = mod.split("|");
@@ -193,13 +258,27 @@ class Mods
 					added.push(folder);
 					list.push([folder, (dat[1] == "1")]);
 				}
+				updateModList(true);
+			}
+			else
+			for (mod in CoolUtil.coolTextFile('contentsList.txt'))
+			{
+				var dat:Array<String> = mod.split("|");
+				var folder:String = dat[0];
+				if(folder.trim().length > 0 && FileSystem.exists(Paths.content(folder)) && FileSystem.isDirectory(Paths.content(folder)) && !added.contains(folder))
+				{
+					added.push(folder);
+					list.push([folder, (dat[1] == "1")]);
+				}
 			}
 		} catch(e) {
 			trace(e);
 		}
 		
-		// Scan for folders that aren't on modsList.txt yet
-		for (folder in getModDirectories())
+		if (!content)
+		{
+        // Scan for folders that aren't on modsList.txt yet
+		for (folder in getModDirectories(false, false))
 		{
 			if(folder.trim().length > 0 && FileSystem.exists(Paths.mods(folder)) && FileSystem.isDirectory(Paths.mods(folder)) &&
 			!ignoreModFolders.contains(folder.toLowerCase()) && !added.contains(folder))
@@ -219,6 +298,33 @@ class Mods
 		}
 
 		File.saveContent('modsList.txt', fileStr);
+		}
+		else
+		{
+        // Scan for folders that aren't on contentsList.txt yet
+		for (folder in getModDirectories(false, true))
+		{
+			if(folder.trim().length > 0 && FileSystem.exists(Paths.content(folder)) && FileSystem.isDirectory(Paths.content(folder)) &&
+			!ignoreModFolders.contains(folder.toLowerCase()) && !added.contains(folder))
+			{
+				added.push(folder);
+				list.push([folder, true]); //i like it false by default. -bb //Well, i like it True! -Shadow Mario (2022)
+				//Shadow Mario (2023): What the fuck was bb thinking
+			}
+		}
+
+		// Now save file
+		var fileStr:String = '';
+		for (values in list)
+		{
+			if(fileStr.length > 0) fileStr += '\n';
+			fileStr += values[0] + '|' + (values[1] ? '1' : '0');
+		}
+
+		File.saveContent('contentsList.txt', fileStr);
+		}
+
+		
 		updatedOnState = true;
 		//trace('Saved modsList.txt');
 		#end

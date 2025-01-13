@@ -11,6 +11,7 @@ import objects.StrumNote;
 import warped.objects.StrumLine;
 
 import flixel.math.FlxRect;
+import warped.math.Vector3;
 
 using StringTools;
 
@@ -37,6 +38,23 @@ typedef NoteSplashData = {
 **/
 class Note extends FlxSprite
 {
+	public var vec3Cache:Vector3 = new Vector3(); // for vector3 operations in modchart code
+	public var defScale:FlxPoint = FlxPoint.get(); // for modcharts to keep the scaling
+
+	public var mAngle:Float = 0;
+	public var bAngle:Float = 0;
+    public var visualTime:Float = 0;
+	public var typeOffsetX:Float = 0; // used to offset notes, mainly for note types. use in place of offset.x and offset.y when offsetting notetypes
+	public var typeOffsetY:Float = 0;
+
+	public var noteDiff:Float = 1000;
+	public var zIndex:Float = 0;
+	public var desiredZIndex:Float = 0;
+	public var z:Float = 0;
+	public var garbage:Bool = false; // if this is true, the note will be removed in the next update cycle
+	public var alphaMod:Float = 1;
+	public var alphaMod2:Float = 1; // TODO: unhardcode this shit lmao
+
 	//This is needed for the hardcoded note types to appear on the Chart Editor,
 	//It's also used for backwards compatibility with 0.1 - 0.3.2 charts.
 	public static final defaultNoteTypes:Array<String> = [
@@ -274,7 +292,8 @@ class Note extends FlxSprite
 		// MAKE SURE ITS DEFINITELY OFF SCREEN?
 		y -= 2000;
 		this.strumTime = strumTime;
-		if(!inEditor) this.strumTime += ClientPrefs.data.noteOffset;
+		if(!inEditor){ this.strumTime += ClientPrefs.data.noteOffset;
+		visualTime = PlayState.instance.getNoteInitialTime(this.strumTime);}
 
 		this.noteData = noteData;
 
@@ -520,6 +539,11 @@ class Note extends FlxSprite
 			if (alpha > 0.3)
 				alpha = 0.3;
 		}
+
+		var diff = (strumTime - Conductor.songPosition);
+		noteDiff = diff;
+
+		rgbShader.mult = alphaMod * alphaMod2;
 	}
 
 	override public function destroy()

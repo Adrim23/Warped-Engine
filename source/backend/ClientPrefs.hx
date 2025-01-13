@@ -78,11 +78,16 @@ import states.TitleState;
 	public var discordRPC:Bool = true;
 	public var loadingScreen:Bool = true;
 	public var language:String = 'en-US';
+	
+	public var customChar:String = 'default';
+	public var customGF:String = 'default';
+	public var customDAD:String = 'default';
 }
 
 class ClientPrefs {
 	public static var data:SaveVariables = {};
 	public static var defaultData:SaveVariables = {};
+	public static var globalAntialiasing:Bool; //fucking tired of changing it to "ClientPrefs.data.antialiasing"
 
 	//Every key has two binds, add your key bind down here and then add your control on options/ControlsSubState.hx and Controls.hx
 	public static var keyBinds:Map<String, Array<FlxKey>> = [
@@ -157,7 +162,12 @@ class ClientPrefs {
 
 	public static function saveSettings() {
 		for (key in Reflect.fields(data))
+		{
 			Reflect.setField(FlxG.save.data, key, Reflect.field(data, key));
+			
+			if (key == 'antialiasing')
+				ClientPrefs.globalAntialiasing = Reflect.field(FlxG.save.data, key);
+		}
 
 		#if ACHIEVEMENTS_ALLOWED Achievements.save(); #end
 		FlxG.save.flush();
@@ -175,8 +185,13 @@ class ClientPrefs {
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 
 		for (key in Reflect.fields(data))
+		{
 			if (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key))
 				Reflect.setField(data, key, Reflect.field(FlxG.save.data, key));
+
+			if (key == 'antialiasing')
+				ClientPrefs.globalAntialiasing = Reflect.field(FlxG.save.data, key);
+		}
 		
 		if(Main.fpsVar != null)
 			Main.fpsVar.visible = data.showFPS;

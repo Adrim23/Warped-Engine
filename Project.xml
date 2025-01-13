@@ -102,7 +102,11 @@
 
 	<section if="MODS_ALLOWED">
 		<assets path='example_mods' rename='mods' embed='false' type='template' unless="mac"/>
+		<assets path='example_content' rename='content' embed='false' type='template' unless="mac"/>
+		<assets path='example_custom' rename='custom' embed='false' type='template' unless="mac"/>
 		<assets path='example_mods' rename='mods' embed='false' if="mac"/>
+		<assets path='example_content' rename='content' embed='false' if="mac"/>
+		<assets path='example_custom' rename='custom' embed='false' if="mac"/>
 	</section>
 	<assets path='art/readme.txt' rename='do NOT readme.txt' />
 	<assets path='list.txt' rename='modsList.txt' />

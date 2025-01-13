@@ -13,7 +13,7 @@ import warped.backend.HttpUtil;
 class DiscordClient
 {
 	public static var isInitialized:Bool = false;
-	private static final _defaultID:String = "1304722013675454554";
+	private static final _defaultID:String = "1322642070740926495";
 	public static var clientID(default, set):String = _defaultID;
 	private static var presence:DiscordRichPresence = DiscordRichPresence.create();
 	public static var userData:DUser;

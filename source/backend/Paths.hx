@@ -281,10 +281,14 @@ class Paths
 			if(parentFolder == 'songs') modKey = 'songs/$key';
 
 			for(mod in Mods.getGlobalMods())
-				if (FileSystem.exists(mods('$mod/$modKey')))
+			{
+				if (FileSystem.exists(mods('${Mods.currentModDirectory}/$modKey')))
 					return true;
+				if (FileSystem.exists(content('${Mods.currentModDirectory}/$modKey')))
+					return true;
+			}
 
-			if (FileSystem.exists(mods(Mods.currentModDirectory + '/' + modKey)) || FileSystem.exists(mods(modKey)))
+			if (FileSystem.exists(mods(Mods.currentModDirectory + '/' + modKey)) || FileSystem.exists(mods(modKey)) || FileSystem.exists(content(Mods.currentModDirectory + '/' + modKey)))
 				return true;
 		}
 		#end
@@ -424,6 +428,9 @@ class Paths
 	#if MODS_ALLOWED
 	inline static public function mods(key:String = '')
 		return 'mods/' + key;
+	
+	inline static public function content(key:String = '')
+		return 'content/' + key;
 
 	inline static public function modsJson(key:String)
 		return modFolders('data/' + key + '.json');
@@ -451,7 +458,14 @@ class Paths
 		if(Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0)
 		{
 			var fileToCheck:String = mods(Mods.currentModDirectory + '/' + key);
-			if(FileSystem.exists(fileToCheck))
+			if(!FileSystem.isDirectory(mods(Mods.currentModDirectory)))
+			{
+				if(StringTools.startsWith(Mods.currentModDirectory, 'nt/')) 
+					Mods.currentModDirectory = Mods.currentModDirectory.split('/')[1];
+
+				fileToCheck = content(Mods.currentModDirectory + '/' + key);
+				//fileToCheck
+			}
 				return fileToCheck;
 		}
 
@@ -613,9 +627,18 @@ class Paths
 
 		return modFolders(Mods.currentModDirectory+'/songs/$song/charts/$difficulty.json');
 	}
+	
+	static public function chartData(songName:String, folder:String):String
+	{
+		var returnPath = getPath('data/$folder/$songName.json', TEXT, null, true);
+		if (!FileSystem.exists(returnPath)) returnPath = getPath('songs/$folder/$songName.json', TEXT, null, true);
+		if (!FileSystem.exists(returnPath)) returnPath = getPath('songs/$folder/charts/$songName.json', TEXT, null, true);
+        trace(returnPath);
+		return returnPath;
+	}
 
 	inline static public function file(file:String)
-		return modFolders(Mods.currentModDirectory+'/$file');
+		return modFolders('$file');
 }
 
 class ScriptPathInfo {

@@ -1,6 +1,7 @@
 package debug;
 
 import flixel.FlxG;
+import flixel.FlxBasic;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
 import openfl.system.System;
@@ -23,6 +24,7 @@ class FPSCounter extends TextField
 	public var framerateText:TextField;
 	public var fpsText:TextField;
 	public var daOtherShit:TextField;
+	public var renderedObjects:Int;
 
 	@:noCompletion private var times:Array<Float>;
 

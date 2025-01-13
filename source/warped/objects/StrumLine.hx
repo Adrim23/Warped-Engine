@@ -567,6 +567,31 @@ class StrumLine extends FlxTypedSpriteGroup<StrumNote>
 								daNote.active = daNote.visible = false;
 								PlayState.instance.invalidateNote(daNote);
 							}
+
+              if (PlayState.instance.modManager.isActive)
+              {
+                var visPos = -((Conductor.visualPosition - daNote.visualTime) * PlayState.instance.songSpeed);
+                var pN:Int = daNote.mustPress ? 0 : 1;
+                var pos = PlayState.instance.modManager.getPos(daNote.strumTime, visPos,
+                daNote.strumTime - Conductor.songPosition, PlayState.instance.dbeatPublic, daNote.noteData, pN, daNote, [], daNote.vec3Cache);
+                PlayState.instance.modManager.updateObject(PlayState.instance.dbeatPublic, daNote, pos, pN);
+  
+                if (daNote.isSustainNote)
+                {
+                  var futureSongPos = Conductor.visualPosition + (Conductor.stepCrochet * 0.001);
+                  var diff = daNote.visualTime - futureSongPos;
+                  var vDiff = -((futureSongPos - daNote.visualTime) * PlayState.instance.songSpeed);
+        
+                  var nextPos = PlayState.instance.modManager.getPos(daNote.strumTime, vDiff, diff, Conductor.getStep(futureSongPos) / 4, daNote.noteData, pN, daNote, [], daNote.vec3Cache);
+                  nextPos.x += daNote.offsetX;
+                  nextPos.y += daNote.offsetY;
+                  var diffX = (nextPos.x - pos.x);
+                  var diffY = (nextPos.y - pos.y);
+                  var rad = Math.atan2(diffY, diffX);
+                  var deg = rad * (180 / Math.PI);
+                  daNote.mAngle = deg;
+                }
+              }
 						});
 					}
 					else

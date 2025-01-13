@@ -20,4 +20,13 @@ final class MenuChangeEvent extends CancellableEvent {
 	 * Whenever the menu SFX should be played.
 	 */
 	public var playMenuSFX:Bool = true;
+
+	public function new(oV:Int, v:Int, c:Int, SFX:Bool)
+	{
+		super();
+		oldValue = oV;
+		value = v;
+		change = c;
+		playMenuSFX = SFX;
+	}
 }

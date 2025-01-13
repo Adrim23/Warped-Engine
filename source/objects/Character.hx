@@ -4,9 +4,11 @@ import backend.animation.PsychAnimationController;
 
 import flixel.util.FlxSort;
 import flixel.util.FlxDestroyUtil;
+import flixel.graphics.frames.FlxAtlasFrames;
 
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
+import openfl.display.BitmapData;
 import haxe.Json;
 import haxe.Exception;
 import haxe.io.Path;
@@ -49,6 +51,7 @@ class Character extends FlxSprite
 	 * In case a character is missing, it will use this on its place
 	**/
 	public static final DEFAULT_CHARACTER:String = 'bf';
+	public static var characterList:Array<Character> = [];
 
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
@@ -59,6 +62,7 @@ class Character extends FlxSprite
 
 	public var holdTimer:Float = 0;
 	public var heyTimer:Float = 0;
+	public var animTimer:Float = 0;
 	public var specialAnim:Bool = false;
 	public var animationNotes:Array<Dynamic> = [];
 	public var stunned:Bool = false;
@@ -66,6 +70,7 @@ class Character extends FlxSprite
 	public var idleSuffix:String = '';
 	public var danceIdle:Bool = false; //Character use "danceLeft" and "danceRight" instead of "idle"
 	public var skipDance:Bool = false;
+	public var voicelining:Bool = false;
 
 	public var healthIcon:String = 'face';
 	public var animationsArray:Array<AnimArray> = [];
@@ -73,6 +78,7 @@ class Character extends FlxSprite
 	public var positionArray:Array<Float> = [0, 0];
 	public var cameraPosition:Array<Float> = [0, 0];
 	public var healthColorArray:Array<Int> = [255, 0, 0];
+	public var iconColor(get, never):FlxColor;
 
 	public var missingCharacter:Bool = false;
 	public var missingText:FlxText;
@@ -92,17 +98,31 @@ class Character extends FlxSprite
 
 	public var useAlts:Bool; //for a better management of alt anims
 	public var playerOffsets:Bool = false;
+	public var updatedByPlayState:Bool = true; //set this to false in case you want to do your own idle system :shrug:
+	public var gf:Bool = false; //for gf lol
 
-	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
+	//UMM
+	public var custom:Bool=false;
+	public var Custom(get, never):Bool;
+	public var customName(get, never):String;
+
+	function get_Custom():Bool{return custom;}
+	function get_customName():String{return this.isPlayer ? 'right' : 'left';}
+
+	function get_iconColor():FlxColor{return FlxColor.fromRGB(healthColorArray[0], healthColorArray[1], healthColorArray[2]);}
+
+	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false, ?cum:Bool=false)
 	{
 		super(x, y);
 
 		animation = new PsychAnimationController(this);
+		custom = cum;
 
 		animOffsets = new Map<String, Array<Dynamic>>();
 		this.isPlayer = isPlayer;
-		changeCharacter(character);
-		
+		changeCharacter(character, cum);
+
+		characterList.push(this);
 		switch(curCharacter)
 		{
 			case 'pico-speaker':
@@ -114,15 +134,16 @@ class Character extends FlxSprite
 		}
 	}
 
-	public function changeCharacter(character:String)
+	public function changeCharacter(character:String, ?c:Bool=false)
 	{
 		animationsArray = [];
 		animOffsets = [];
 		curCharacter = character;
 		var characterPath:String = 'characters/$character.json';
-
+        if (c) characterPath = 'custom/characters/$character/$customName.json';
+		
 		var isXml:Bool = false;
-		var path:String = Paths.getPath(characterPath, TEXT);
+		var path:String = c ? characterPath : Paths.getPath(characterPath, TEXT);
 		#if MODS_ALLOWED
 		if (!FileSystem.exists(path))
 		#else
@@ -145,7 +166,7 @@ class Character extends FlxSprite
 		{
 			if (!isXml)
 			#if MODS_ALLOWED
-			loadCharacterFile(Json.parse(File.getContent(path)));
+			loadCharacterFile(Json.parse(File.getContent(path)), c);
 			#else
 			loadCharacterFile(Json.parse(Assets.getText(path)));
 			#end
@@ -163,7 +184,7 @@ class Character extends FlxSprite
 		dance();
 	}
 
-	public function loadCharacterFile(json:Dynamic)
+	public function loadCharacterFile(json:Dynamic, ?cum:Bool=false)
 	{
 		isAnimateAtlas = false;
 
@@ -178,7 +199,7 @@ class Character extends FlxSprite
 
 		if(!isAnimateAtlas)
 		{
-			frames = Paths.getMultiAtlas(json.image.split(','));
+			if (!cum) frames = Paths.getMultiAtlas(json.image.split(',')); else frames = FlxAtlasFrames.fromSparrow(BitmapData.fromFile('custom/characters/$curCharacter/character.png'), File.getContent('custom/characters/$curCharacter/character.xml'));
 		}
 		#if flxanimate
 		else
@@ -385,6 +406,14 @@ class Character extends FlxSprite
 			return;
 		}
 
+		if(animTimer > 0){
+			animTimer -= elapsed;
+			if(animTimer<=0){
+				animTimer=0;
+				dance();
+			}
+		}
+
 		if(heyTimer > 0)
 		{
 			var rate:Float = (PlayState.instance != null ? PlayState.instance.playbackRate : 1.0);
@@ -426,14 +455,7 @@ class Character extends FlxSprite
 				if(isAnimationFinished()) playAnim(getAnimationName(), false, false, animation.curAnim.frames.length - 3);
 		}
 
-		if (getAnimationName().startsWith('sing')) holdTimer += elapsed;
-		else if(isPlayer) holdTimer = 0;
-
-		if (!isPlayer && holdTimer >= Conductor.stepCrochet * (0.0011 #if FLX_PITCH / (FlxG.sound.music != null ? FlxG.sound.music.pitch : 1) #end) * singDuration)
-		{
-			dance();
-			holdTimer = 0;
-		}
+		if (getAnimationName().startsWith('sing')) holdTimer += elapsed; else holdTimer = 0;
 
 		var name:String = getAnimationName();
 		if(isAnimationFinished() && hasAnimation('$name-loop'))
@@ -449,6 +471,11 @@ class Character extends FlxSprite
 
 	var _lastPlayedAnimation:String;
 	inline public function getAnimationName():String
+	{
+		return _lastPlayedAnimation;
+	}
+	
+	inline public function getAnimName():String
 	{
 		return _lastPlayedAnimation;
 	}
@@ -498,7 +525,7 @@ class Character extends FlxSprite
 	 */
 	public function dance()
 	{
-		if (!debugMode && !skipDance && !specialAnim)
+		if (!debugMode && !skipDance && !specialAnim && animTimer <= 0 && !voicelining)
 		{
 			if(danceIdle)
 			{
@@ -603,6 +630,11 @@ class Character extends FlxSprite
 		animation.addByPrefix(name, anim, 24, false);
 	}
 
+	public function getIcon():String
+	{
+		return (healthIcon != null) ? healthIcon : 'face';
+	}
+
 	// Atlas support
 	// special thanks ne_eo for the references, you're the goat!!
 	@:allow(states.editors.CharacterEditorState)
@@ -673,6 +705,7 @@ class Character extends FlxSprite
 	public override function destroy()
 	{
 		atlas = FlxDestroyUtil.destroy(atlas);
+		characterList.remove(this);
 		super.destroy();
 	}
 	#end

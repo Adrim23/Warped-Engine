@@ -13,6 +13,7 @@ class Bar extends FlxSpriteGroup
 	public var leftToRight(default, set):Bool = true;
 	public var barCenter(default, null):Float = 0;
 	public var newPercentage:Float = 0; //Im adding this in case you want to do a lerp or smth
+	public var flipped:Bool = false; //just for playstate lol
 
 	// you might need to change this if you want to use a custom bar
 	public var barWidth(default, set):Int = 1;

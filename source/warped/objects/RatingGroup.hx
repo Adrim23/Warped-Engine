@@ -10,6 +10,7 @@ class RatingGroup extends FlxSpriteGroup
     public var postfix:String = ''; //Postfix of the image
     public var folder:String = ''; //folder of the image
     public var comboFunction:Void->Bool; //Function that plays when the score pops up, return false to cancel the normal ht counter
+    public var comboOffsets:Array<Null<Float>> = []; //Set the values inside and it will automatically set the combo shit there
 
     public function popUp(event:NoteHitEvent, daRating:Rating)
     {
@@ -33,7 +34,7 @@ class RatingGroup extends FlxSpriteGroup
         if (folder != '' && folder != null) daPrefix = prefix+"/"+"UI";
 
         var rating:FlxSprite = new FlxSprite();
-		rating.loadGraphic(Paths.image(daPrefix +"/"+ daRating.image + postfix));
+		rating.loadGraphic(Paths.image((PlayState.instance.comboPrefix == null) ? daPrefix +"/"+ daRating.image + postfix : PlayState.instance.comboPrefix + daRating.image + postfix));
 		rating.screenCenter();
 		rating.x = placement - 40;
 		rating.y -= 60;
@@ -41,19 +42,19 @@ class RatingGroup extends FlxSpriteGroup
 		rating.velocity.y -= FlxG.random.int(140, 175) * PlayState.instance.playbackRate;
 		rating.velocity.x -= FlxG.random.int(0, 10) * PlayState.instance.playbackRate;
 		rating.visible = (!ClientPrefs.data.hideHud && PlayState.instance.showRating);
-		rating.x += ClientPrefs.data.comboOffset[0];
-		rating.y -= ClientPrefs.data.comboOffset[1];
+		rating.x += (comboOffsets[0] == null) ? ClientPrefs.data.comboOffset[0] : comboOffsets[0];
+		rating.y -= (comboOffsets[1] == null) ? ClientPrefs.data.comboOffset[1] : comboOffsets[1];
 		rating.antialiasing = event.ratingAntialiasing;
 		rating.alt = false;
 
-		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(daPrefix +"/"+ 'combo' + postfix));
+		var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image((PlayState.instance.comboPrefix == null) ? daPrefix +"/"+ 'combo' + postfix : PlayState.instance.comboPrefix + 'combo' + postfix));
 		comboSpr.screenCenter();
 		comboSpr.x = placement;
 		comboSpr.acceleration.y = FlxG.random.int(200, 300) * PlayState.instance.playbackRate * PlayState.instance.playbackRate;
 		comboSpr.velocity.y -= FlxG.random.int(140, 160) * PlayState.instance.playbackRate;
 		comboSpr.visible = (!ClientPrefs.data.hideHud && PlayState.instance.showCombo);
-		comboSpr.x += ClientPrefs.data.comboOffset[0];
-		comboSpr.y -= ClientPrefs.data.comboOffset[1];
+		comboSpr.x += (comboOffsets[0] == null) ? ClientPrefs.data.comboOffset[0] : comboOffsets[0];
+		comboSpr.y -= (comboOffsets[1] == null) ? ClientPrefs.data.comboOffset[1] : comboOffsets[1];
 		comboSpr.antialiasing = event.ratingAntialiasing;
 		comboSpr.y += 60;
 		comboSpr.velocity.x += FlxG.random.int(1, 10) * PlayState.instance.playbackRate;
@@ -82,10 +83,13 @@ class RatingGroup extends FlxSpriteGroup
 		var separatedScore:String = Std.string(PlayState.instance.combo).lpad('0', 3);
 		for (i in 0...separatedScore.length)
 		{
-			var numScore:FlxSprite = new FlxSprite().loadGraphic(Paths.image(daPrefix +"/"+ 'num' + Std.parseInt(separatedScore.charAt(i)) + postfix));
+			var numScore:FlxSprite = new FlxSprite().loadGraphic(Paths.image((PlayState.instance.comboPrefix == null) ? daPrefix +"/"+ 'num' + Std.parseInt(separatedScore.charAt(i)) + postfix + postfix : PlayState.instance.comboPrefix + 'num' + Std.parseInt(separatedScore.charAt(i)) + postfix + postfix));
 			numScore.screenCenter();
-			numScore.x = placement + (43 * daLoop) - 90 + ClientPrefs.data.comboOffset[2];
-			numScore.y += 80 - ClientPrefs.data.comboOffset[3];
+			var nScore:Array<Dynamic> = [];
+			nScore[0] = (comboOffsets[2] == null) ? ClientPrefs.data.comboOffset[2] : comboOffsets[2];
+			nScore[1] = (comboOffsets[3] == null) ? ClientPrefs.data.comboOffset[3] : comboOffsets[3];
+			numScore.x = placement + (43 * daLoop) - 90 + nScore[0];
+			numScore.y += 80 - nScore[1];
 
 			if (!PlayState.isPixelStage) numScore.setGraphicSize(Std.int(numScore.width * event.numScale));
 			else numScore.setGraphicSize(Std.int(numScore.width * PlayState.daPixelZoom));

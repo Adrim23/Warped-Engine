@@ -43,7 +43,7 @@ class ScriptPack extends Script {
 	public function importScript(path:String):Script {
 		var doesntExist:Bool=true;
 		var extension:String='';
-		path = '${Mods.currentModDirectory}/'+path;
+		path = '/'+path;
 		for (ext in ["hx", "hscript", "hxs", "hsc"])
 		{
 			if (FileSystem.exists(Paths.modFolders('$path.$ext')))

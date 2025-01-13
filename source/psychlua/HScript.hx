@@ -131,6 +131,7 @@ class HScript extends SScript
 		set('Character', Character);
 		set('Alphabet', Alphabet);
 		set('Note', objects.Note);
+		set('BGSprite', objects.BGSprite);
 		set('StrumLine', warped.objects.StrumLine);
 		set('CustomSubstate', CustomSubstate);
 		#if (!flash && sys)

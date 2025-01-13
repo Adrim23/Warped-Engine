@@ -6,6 +6,7 @@ import backend.Song;
 import backend.Conductor;
 import warped.backend.freeplay.DJCharacter;
 import warped.backend.freeplay.DJBoyfriend;
+import warped.substates.CustomCharSubstate;
 
 import objects.HealthIcon;
 import objects.MusicPlayer;
@@ -15,6 +16,7 @@ import substates.ResetScoreSubState;
 
 import flixel.math.FlxMath;
 import flixel.util.FlxDestroyUtil;
+import flixel.util.FlxStringUtil;
 import flixel.group.FlxSpriteGroup.FlxTypedSpriteGroup;
 import flixel.util.FlxSignal.FlxTypedSignal;
 import flixel.effects.FlxFlicker;
@@ -81,7 +83,7 @@ class FreeplayState extends MusicBeatState
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Menus", null);
+		DiscordClient.changePresence("Selecting a Song", null);
 		#end
 
 		if(WeekData.weeksList.length < 1)
@@ -267,6 +269,7 @@ class FreeplayState extends MusicBeatState
 		Conductor.bpm = 90;
 		Conductor.songPosition = 0;
 		if (restart) dj.playFlashAnimation('Boyfriend DJ', true, false, false);
+		if (freeplayMusic!=null) freeplayMusic.stop();
 		freeplayMusic = FlxG.sound.play(Paths.music('stayFunky'), 1, false, null, true, function(){
 			restartMusicBPM();
 		});
@@ -294,6 +297,7 @@ class FreeplayState extends MusicBeatState
 	public static var opponentVocals:FlxSound = null;
 	var holdTime:Float = 0;
 
+	#if DISCORD_ALLOWED var discordDelay:Float=0; #end
 	var stopMusicPlay:Bool = false;
 	override function update(elapsed:Float)
 	{
@@ -407,6 +411,11 @@ class FreeplayState extends MusicBeatState
 		{
 			persistentUpdate = false;
 			openSubState(new GameplayChangersSubstate());
+		}
+		else if(FlxG.keys.justPressed.ALT && !player.playingMusic && !selectedSong)
+		{
+			persistentUpdate = false;
+			openSubState(new CustomCharSubstate());
 		}
 		else if(FlxG.keys.justPressed.SPACE && !selectedSong)
 		{
@@ -562,7 +571,7 @@ class FreeplayState extends MusicBeatState
 
 		updateTexts(elapsed);
 		if (Conductor.songPosition >= lastPosition) lastPosition = Conductor.songPosition; else resetBeats();
-		Conductor.songPosition = (freeplayMusic != null) ? freeplayMusic.time : FlxG.sound.music.time;
+		if((player!=null && player.playingMusic) || freeplayMusic!=null)Conductor.songPosition = !player.playingMusic ? freeplayMusic.time : FlxG.sound.music.time;
 		super.update(elapsed);
 		if (songs[curSelected].week == totalWeeksLoaded-1 && !isLoadingNewSongs) 
 		{
@@ -575,6 +584,15 @@ class FreeplayState extends MusicBeatState
 			if (dj != null)
 				dj.resetAFKTimer();
 		}
+		#if DISCORD_ALLOWED
+		discordDelay += elapsed;
+		if (discordDelay > 0.1)
+		{
+        // Updating Discord Rich Presence
+		if(!player.playingMusic) DiscordClient.changePresence("Selecting a Song", null); else DiscordClient.changePresence('Listening to ${songs[curSelected].songName}', '${FlxStringUtil.formatTime(FlxG.sound.music.time/1000)} / ${FlxStringUtil.formatTime(FlxG.sound.music.length/1000)} (${player.playbackRate}x)');
+		discordDelay = 0;
+		}
+		#end
 	}
 
 	function resetBeats()

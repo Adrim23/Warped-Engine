@@ -1,19 +1,28 @@
 package objects;
 
+import flixel.math.FlxPoint;
+
 import backend.animation.PsychAnimationController;
 
 import shaders.RGBPalette;
 import shaders.RGBPalette.RGBShaderReference;
 
+import warped.math.Vector3;
+
 class StrumNote extends FlxSprite
 {
+	public var vec3Cache:Vector3 = new Vector3(); // for vector3 operations in modchart code
+	public var defScale:FlxPoint = FlxPoint.get(); // for modcharts to keep the scaling
+
 	public var rgbShader:RGBShaderReference;
 	public var resetAnim:Float = 0;
-	private var noteData:Int = 0;
+	public var noteData:Int = 0;
 	public var direction:Float = 90;
 	public var downScroll:Bool = false;
 	public var sustainReduce:Bool = true;
-	private var player:Int;
+	public var player:Int;
+	public var targetAlpha:Float = 1;
+	public var alphaMult:Float;
 	
 	public var texture(default, set):String = null;
 	public var size(default, set):Null<Float> = null;
@@ -143,6 +152,7 @@ class StrumNote extends FlxSprite
 					animation.addByPrefix('confirm', 'right confirm', 24, false);
 			}
 		}
+		defScale.copyFrom(scale);
 		updateHitbox();
 
 		if(lastAnim != null)
@@ -185,5 +195,11 @@ class StrumNote extends FlxSprite
 			centerOrigin();
 		}
 		if(useRGBShader) rgbShader.enabled = (animation.curAnim != null && animation.curAnim.name != 'static');
+	}
+
+	override function destroy()
+	{
+		defScale.put();
+		super.destroy();
 	}
 }
